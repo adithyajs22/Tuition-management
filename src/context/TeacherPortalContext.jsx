@@ -46,7 +46,7 @@ const INITIAL_MASTER_PORTIONS = [
   { id: 'c10-cb-m1', targetClass: 'Class 10', board: 'CBSE', subject: 'Mathematics', portionName: 'Real Numbers & Polynomials', status: 'Completed' }
 ];
 
-const ENV_PASSCODE = import.meta.env.VITE_PASSCODE;
+const ENV_PASSCODE = import.meta.env.VITE_PASSCODE || 'tuition1';
 
 export function TeacherPortalProvider({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
