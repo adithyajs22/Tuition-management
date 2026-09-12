@@ -35,7 +35,7 @@ export default function TeacherLogin() {
           <h1 className="text-2xl font-black text-white tracking-tight">Teacher Portal Access</h1>
           <p className="text-xs text-orange-400 mt-1 font-semibold flex items-center justify-center gap-1">
             <Sparkles className="w-3.5 h-3.5 text-orange-400" />
-            Peacock Blue & Dark Orange Theme
+            Admin access only. Please enter the passcode to proceed.
           </p>
         </div>
 
