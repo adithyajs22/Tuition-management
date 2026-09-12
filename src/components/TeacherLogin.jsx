@@ -13,7 +13,7 @@ export default function TeacherLogin() {
     e.preventDefault();
     const success = loginTeacher(passcode);
     if (!success) {
-      setErrorMsg(`Invalid Passcode! Use the configured passcode from .env (${envPasscode}).`);
+      setErrorMsg(`Invalid Passcode! Please try again.`);
     }
   };
 
