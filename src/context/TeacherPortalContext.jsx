@@ -46,6 +46,8 @@ const INITIAL_MASTER_PORTIONS = [
   { id: 'c10-cb-m1', targetClass: 'Class 10', board: 'CBSE', subject: 'Mathematics', portionName: 'Real Numbers & Polynomials', status: 'Completed' }
 ];
 
+const ENV_PASSCODE = import.meta.env.VITE_PASSCODE;
+
 export function TeacherPortalProvider({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     return localStorage.getItem('apex_teacher_auth') === 'true';
@@ -160,7 +162,7 @@ export function TeacherPortalProvider({ children }) {
   const currentExams = currentStudent ? (weeklyExams[currentStudent.id] || []) : [];
 
   const loginTeacher = (passcode) => {
-    if (passcode === '1234' || passcode === 'admin') {
+    if (passcode === ENV_PASSCODE) {
       setIsAuthenticated(true);
       return true;
     }

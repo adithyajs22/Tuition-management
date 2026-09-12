@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useTeacherPortal } from '../context/TeacherPortalContext';
 import { GraduationCap, ArrowRight, ShieldCheck, KeyRound, Sparkles } from 'lucide-react';
 
+const envPasscode = import.meta.env.VITE_PASSCODE || '1234';
+
 export default function TeacherLogin() {
   const { loginTeacher } = useTeacherPortal();
   const [passcode, setPasscode] = useState('');
@@ -11,12 +13,12 @@ export default function TeacherLogin() {
     e.preventDefault();
     const success = loginTeacher(passcode);
     if (!success) {
-      setErrorMsg('Invalid Passcode! Try default passcode: 1234');
+      setErrorMsg(`Invalid Passcode! Use the configured passcode from .env (${envPasscode}).`);
     }
   };
 
   const handleDemoLogin = () => {
-    loginTeacher('1234');
+    loginTeacher(envPasscode);
   };
 
   return (
@@ -51,7 +53,7 @@ export default function TeacherLogin() {
               <KeyRound className="w-4 h-4 text-cyan-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="password"
-                placeholder="Enter passcode (Default: 1234)"
+                placeholder="Enter passcode "
                 value={passcode}
                 onChange={(e) => {
                   setPasscode(e.target.value);
@@ -85,7 +87,7 @@ export default function TeacherLogin() {
             className="w-full py-2.5 px-4 rounded-xl bg-[#000000] hover:bg-[#121215] text-orange-400 text-xs font-bold border border-orange-500/30 flex items-center justify-center gap-2 transition-colors"
           >
             <ShieldCheck className="w-4 h-4 text-cyan-400" />
-            Quick Unlock (Passcode: 1234)
+            Quick Unlock (Passcode: {envPasscode})
           </button>
         </div>
 
