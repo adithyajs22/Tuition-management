@@ -1,0 +1,113 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    background-color: #191970 !important; /* Dark Navy base */
+    color: #f0f0f0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    letter-spacing: -0.01em;
+  }
+}
+
+/* AJS Color Palette: #FF00FF | #00FFFF | #CCFF00 | #191970 */
+:root {
+  --color-magenta: #FF00FF;
+  --color-cyan: #00FFFF;
+  --color-lime: #CCFF00;
+  --color-navy: #191970;
+  --color-navy-light: #1e2080;
+  --color-navy-card: #13165a;
+  --color-navy-darker: #0d1045;
+}
+
+.bg-ajs-navy {
+  background-color: #191970 !important;
+}
+
+.bg-ajs-card {
+  background-color: #13165a;
+  border: 1px solid rgba(0, 255, 255, 0.12);
+}
+
+.bg-ajs-card-hover:hover {
+  border-color: rgba(0, 255, 255, 0.35);
+  box-shadow: 0 0 28px rgba(0, 255, 255, 0.1);
+}
+
+.border-ajs {
+  border-color: rgba(0, 255, 255, 0.15);
+}
+
+.text-magenta {
+  color: #FF00FF;
+}
+
+.text-cyan-ajs {
+  color: #00FFFF;
+}
+
+.text-lime {
+  color: #CCFF00;
+}
+
+/* Glow effects */
+.glow-magenta {
+  box-shadow: 0 0 20px rgba(255, 0, 255, 0.25);
+}
+
+.glow-cyan {
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.25);
+}
+
+.glow-lime {
+  box-shadow: 0 0 20px rgba(204, 255, 0, 0.2);
+}
+
+/* Gradient text */
+.gradient-text-ajs {
+  background: linear-gradient(135deg, #FF00FF 0%, #00FFFF 50%, #CCFF00 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: #0d1045;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 255, 255, 0.3);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 255, 255, 0.6);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 8px rgba(0, 255, 255, 0.2); }
+  50% { box-shadow: 0 0 22px rgba(0, 255, 255, 0.5); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2.5s ease-in-out infinite;
+}
