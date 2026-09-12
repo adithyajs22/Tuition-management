@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { useTeacherPortal } from '../context/TeacherPortalContext';
-import { GraduationCap, ArrowRight, KeyRound, Sparkles } from 'lucide-react';
+import { GraduationCap, ArrowRight, KeyRound, Sparkles, Eye, EyeOff } from 'lucide-react';
+
+const envPasscode = import.meta.env.VITE_PASSCODE || 'tuition1';
 
 export default function TeacherLogin() {
   const { loginTeacher } = useTeacherPortal();
   const [passcode, setPasscode] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [showPasscode, setShowPasscode] = useState(false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -46,16 +49,24 @@ export default function TeacherLogin() {
             <div className="relative">
               <KeyRound className="w-4 h-4 text-cyan-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
-                type="password"
-                placeholder="Enter passcode "
+                type={showPasscode ? 'text' : 'password'}
+                placeholder="Enter passcode"
                 value={passcode}
                 onChange={(e) => {
                   setPasscode(e.target.value);
                   setErrorMsg('');
                 }}
-                className="w-full bg-[#000000] border border-[#27272a] rounded-xl pl-10 pr-4 py-3 text-sm text-white focus:outline-none focus:border-cyan-400 transition-colors shadow-inner"
+                className="w-full bg-[#000000] border border-[#27272a] rounded-xl pl-10 pr-12 py-3 text-sm text-white focus:outline-none focus:border-cyan-400 transition-colors shadow-inner"
                 autoFocus
               />
+              <button
+                type="button"
+                onClick={() => setShowPasscode((prev) => !prev)}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-cyan-400 transition-colors"
+                aria-label={showPasscode ? 'Hide passcode' : 'Show passcode'}
+              >
+                {showPasscode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
             {errorMsg && (
               <p className="text-xs font-semibold text-rose-400 mt-1.5">{errorMsg}</p>
