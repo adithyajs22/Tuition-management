@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { useTeacherPortal } from '../context/TeacherPortalContext';
-import { GraduationCap, ArrowRight, ShieldCheck, KeyRound, Sparkles } from 'lucide-react';
-
-const envPasscode = import.meta.env.VITE_PASSCODE || '1234';
+import { GraduationCap, ArrowRight, KeyRound, Sparkles } from 'lucide-react';
 
 export default function TeacherLogin() {
   const { loginTeacher } = useTeacherPortal();
@@ -15,10 +13,6 @@ export default function TeacherLogin() {
     if (!success) {
       setErrorMsg(`Invalid Passcode! Please try again.`);
     }
-  };
-
-  const handleDemoLogin = () => {
-    loginTeacher(envPasscode);
   };
 
   return (
@@ -77,19 +71,6 @@ export default function TeacherLogin() {
           </button>
 
         </form>
-
-        {/* Quick Demo Login Option */}
-        <div className="mt-8 pt-6 border-t border-[#1f1f23] text-center">
-          <p className="text-xs text-zinc-400 mb-3">Testing out the teacher portal?</p>
-          <button
-            type="button"
-            onClick={handleDemoLogin}
-            className="w-full py-2.5 px-4 rounded-xl bg-[#000000] hover:bg-[#121215] text-orange-400 text-xs font-bold border border-orange-500/30 flex items-center justify-center gap-2 transition-colors"
-          >
-            <ShieldCheck className="w-4 h-4 text-cyan-400" />
-            Quick Unlock (Passcode: {envPasscode})
-          </button>
-        </div>
 
       </div>
 
