@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useTeacherPortal } from '../context/TeacherPortalContext';
-import { Calendar as CalendarIcon, CheckCircle2, XCircle, Sun, Plus, Trash2, BookOpen } from 'lucide-react';
+import { Calendar as CalendarIcon, CheckCircle2, XCircle, Sun, Plus, Trash2, Pencil } from 'lucide-react';
 
 export default function AttendanceTracker() {
-  const { currentStudent, currentAttendance, addAttendanceRecord, deleteAttendanceRecord } = useTeacherPortal();
+  const { currentStudent, currentAttendance, addAttendanceRecord, updateAttendanceRecord, deleteAttendanceRecord } = useTeacherPortal();
 
   const [showModal, setShowModal] = useState(false);
+  const [editingAttendanceId, setEditingAttendanceId] = useState(null);
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [status, setStatus] = useState('Present');
   const [topic, setTopic] = useState('');
@@ -18,19 +19,45 @@ export default function AttendanceTracker() {
     );
   }
 
+  const getDayName = (value) => {
+    const [year, month, day] = value.split('-').map(Number);
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    return days[new Date(year, month - 1, day).getDay()];
+  };
+
+  const openAddModal = () => {
+    setEditingAttendanceId(null);
+    setDate(new Date().toISOString().split('T')[0]);
+    setStatus('Present');
+    setTopic('');
+    setShowModal(true);
+  };
+
+  const openEditModal = (item) => {
+    setEditingAttendanceId(item.id);
+    setDate(item.date);
+    setStatus(item.status);
+    setTopic(item.topicsCovered === 'Regular Tuition Session' || item.topicsCovered === 'Holiday / Off Day' ? '' : item.topicsCovered);
+    setShowModal(true);
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const dayName = days[new Date(date).getDay()];
-
-    addAttendanceRecord(currentStudent.id, {
+    const record = {
       date,
-      day: dayName,
+      day: getDayName(date),
       status,
       topicsCovered: topic || (status === 'Off Day' ? 'Holiday / Off Day' : 'Regular Tuition Session')
-    });
+    };
+
+    if (editingAttendanceId) {
+      updateAttendanceRecord(currentStudent.id, editingAttendanceId, record);
+    } else {
+      addAttendanceRecord(currentStudent.id, record);
+    }
 
     setTopic('');
+    setEditingAttendanceId(null);
     setShowModal(false);
   };
 
@@ -52,7 +79,7 @@ export default function AttendanceTracker() {
           </div>
 
           <button
-            onClick={() => setShowModal(true)}
+            onClick={openAddModal}
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-black text-sm shrink-0 transition-all"
             style={{ background: 'linear-gradient(135deg, #00FFFF, #CCFF00)', color: '#191970', boxShadow: '0 0 18px rgba(0,255,255,0.3)' }}
           >
@@ -109,6 +136,14 @@ export default function AttendanceTracker() {
 
                     <td className="py-3.5 px-4 text-right">
                       <button
+                        onClick={() => openEditModal(item)}
+                        className="p-1.5 rounded-lg border transition-colors mr-2"
+                        title="Edit entry"
+                        style={{ background: 'rgba(0,255,255,0.1)', color: '#00FFFF', borderColor: 'rgba(0,255,255,0.25)' }}
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button
                         onClick={() => deleteAttendanceRecord(currentStudent.id, item.id)}
                         className="p-1.5 rounded-lg border transition-colors"
                         title="Delete entry"
@@ -140,7 +175,7 @@ export default function AttendanceTracker() {
             style={{ background: '#13165a', borderColor: 'rgba(0,255,255,0.25)', boxShadow: '0 0 50px rgba(0,255,255,0.1)' }}>
             <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
               <CalendarIcon className="w-5 h-5" style={{ color: '#00FFFF' }} />
-              Log Attendance — {currentStudent.name}
+              {editingAttendanceId ? 'Edit Attendance' : 'Log Attendance'} — {currentStudent.name}
             </h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
@@ -190,7 +225,7 @@ export default function AttendanceTracker() {
                 <button type="submit"
                   className="px-5 py-2 rounded-xl text-xs font-black"
                   style={{ background: 'linear-gradient(135deg, #00FFFF, #CCFF00)', color: '#191970', boxShadow: '0 0 16px rgba(0,255,255,0.35)' }}>
-                  Save Attendance
+                  {editingAttendanceId ? 'Update Attendance' : 'Save Attendance'}
                 </button>
               </div>
             </form>

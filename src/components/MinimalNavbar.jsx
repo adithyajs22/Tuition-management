@@ -20,10 +20,10 @@ export default function MinimalNavbar() {
       }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20">
+        <div className="flex items-center justify-between min-h-20 py-3 gap-2">
           
           {/* Brand */}
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActiveTab('portions')}>
+          <div className="flex items-center gap-3 cursor-pointer min-w-0 flex-1" onClick={() => setActiveTab('portions')}>
             <div className="w-11 h-11 rounded-xl flex items-center justify-center shadow-lg"
               style={{
                 background: 'linear-gradient(135deg, #FF00FF, #00FFFF)',
@@ -32,13 +32,13 @@ export default function MinimalNavbar() {
             >
               <GraduationCap className="w-6 h-6 font-black" style={{ color: '#191970' }} />
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <span className="font-extrabold text-lg tracking-tight"
+                <span className="font-extrabold text-lg tracking-tight truncate"
                   style={{ color: '#00FFFF' }}>
                   AJS Teacher Portal
                 </span>
-                <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded font-extrabold border"
+                <span className="hidden sm:inline-flex text-[10px] font-mono uppercase px-2 py-0.5 rounded font-extrabold border"
                   style={{ 
                     background: 'rgba(204, 255, 0, 0.12)',
                     color: '#CCFF00',
@@ -47,7 +47,7 @@ export default function MinimalNavbar() {
                   Classes 5-12
                 </span>
               </div>
-              <p className="text-xs font-medium" style={{ color: 'rgba(0, 255, 255, 0.6)' }}>
+              <p className="hidden sm:block text-xs font-medium truncate" style={{ color: 'rgba(0, 255, 255, 0.6)' }}>
                 State & CBSE Management System
               </p>
             </div>
@@ -87,10 +87,10 @@ export default function MinimalNavbar() {
           </nav>
 
           {/* Controls */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0 max-w-[52%]">
             
             {students.length > 0 ? (
-              <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl border shadow-sm"
+              <div className="flex items-center gap-2 px-2 sm:px-3.5 py-1.5 rounded-xl border shadow-sm min-w-0"
                 style={{
                   background: 'rgba(13, 16, 69, 0.8)',
                   borderColor: 'rgba(0, 255, 255, 0.25)',
@@ -103,7 +103,7 @@ export default function MinimalNavbar() {
                   <select
                     value={activeStudentId}
                     onChange={(e) => setActiveStudentId(e.target.value)}
-                    className="bg-transparent text-xs font-bold focus:outline-none cursor-pointer pr-2"
+                    className="bg-transparent text-xs font-bold focus:outline-none cursor-pointer pr-2 max-w-[30vw] truncate"
                     style={{ color: 'white' }}
                   >
                     {students.map(s => (
@@ -148,7 +148,7 @@ export default function MinimalNavbar() {
         </div>
 
         {/* Mobile Navigation Tabs */}
-        <div className="flex lg:hidden items-center justify-around py-2.5 border-t text-xs"
+        <div className="flex lg:hidden items-center justify-start gap-5 overflow-x-auto py-2.5 border-t text-xs"
           style={{ borderColor: 'rgba(0, 255, 255, 0.1)' }}>
           {[
             { key: 'portions', label: 'Portions', Icon: BookOpen, color: '#CCFF00' },
@@ -161,7 +161,7 @@ export default function MinimalNavbar() {
             <button
               key={key}
               onClick={() => setActiveTab(key)}
-              className="flex flex-col items-center gap-1 font-semibold"
+              className="flex flex-col items-center gap-1 font-semibold shrink-0 min-w-10"
               style={{ color: activeTab === key ? color : 'rgba(255,255,255,0.4)' }}
             >
               <Icon className="w-4 h-4" />

@@ -157,7 +157,9 @@ export function TeacherPortalProvider({ children }) {
   }, [weeklyExams]);
 
   const currentStudent = students.find(s => s.id === activeStudentId) || (students.length > 0 ? students[0] : null);
-  const currentAttendance = currentStudent ? (attendance[currentStudent.id] || []) : [];
+  const currentAttendance = currentStudent
+    ? [...(attendance[currentStudent.id] || [])].sort((a, b) => b.date.localeCompare(a.date))
+    : [];
   const currentFees = currentStudent ? (fees[currentStudent.id] || []) : [];
   const currentExams = currentStudent ? (weeklyExams[currentStudent.id] || []) : [];
 
@@ -224,6 +226,17 @@ export function TeacherPortalProvider({ children }) {
     setAttendance(prev => ({
       ...prev,
       [studentId]: [{ id: 'att-' + Date.now(), ...record }, ...(prev[studentId] || [])]
+    }));
+  };
+
+  const updateAttendanceRecord = (studentId, attId, record) => {
+    setAttendance(prev => ({
+      ...prev,
+      [studentId]: (prev[studentId] || []).map(attendanceRecord => (
+        attendanceRecord.id === attId
+          ? { ...attendanceRecord, ...record }
+          : attendanceRecord
+      ))
     }));
   };
 
@@ -434,6 +447,7 @@ export function TeacherPortalProvider({ children }) {
       updateStudent,
       deleteStudent,
       addAttendanceRecord,
+      updateAttendanceRecord,
       deleteAttendanceRecord,
       markFeePaid,
       markFeeUnpaid,
