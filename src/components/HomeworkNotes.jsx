@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTeacherPortal } from '../context/TeacherPortalContext';
+import { supabase } from '../lib/supabase';
 import {
   ClipboardList, Plus, Trash2, Edit3, X, CheckCircle2, Clock,
   BookOpen, AlertCircle, ChevronDown, ChevronUp
@@ -25,6 +26,45 @@ function useStudentNotes() {
     }
     return {};
   });
+
+  const [remoteReady, setRemoteReady] = useState(false);
+
+  useEffect(() => {
+    const loadNotes = async () => {
+      const { data, error } = await supabase
+        .from('portal_state')
+        .select('homework_notes')
+        .eq('id', 'main')
+        .single();
+
+      if (error) {
+        console.error('Failed to load homework notes from Supabase', error);
+      } else if (Object.keys(data.homework_notes || {}).length > 0) {
+        setNotesMap(data.homework_notes);
+      }
+
+      setRemoteReady(true);
+    };
+
+    loadNotes();
+  }, []);
+
+  useEffect(() => {
+    if (!remoteReady) return;
+
+    const saveNotesToSupabase = async () => {
+      const { error } = await supabase
+        .from('portal_state')
+        .update({ homework_notes: notesMap, updated_at: new Date().toISOString() })
+        .eq('id', 'main');
+
+      if (error) {
+        console.error('Failed to save homework notes to Supabase', error);
+      }
+    };
+
+    saveNotesToSupabase();
+  }, [remoteReady, notesMap]);
 
   const saveNotes = (newMap) => {
     setNotesMap(newMap);

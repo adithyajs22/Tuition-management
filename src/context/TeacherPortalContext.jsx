@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 
 const TeacherPortalContext = createContext();
 
@@ -119,6 +120,39 @@ export function TeacherPortalProvider({ children }) {
     return saved ? JSON.parse(saved) : INITIAL_MASTER_PORTIONS;
   });
 
+  const [remoteReady, setRemoteReady] = useState(false);
+
+  useEffect(() => {
+    const loadSharedPortalState = async () => {
+      const { data, error } = await supabase
+        .from('portal_state')
+        .select('students, attendance, fees, weekly_exams, portions')
+        .eq('id', 'main')
+        .single();
+
+      if (error) {
+        console.error('Failed to load shared portal data from Supabase', error);
+        setRemoteReady(true);
+        return;
+      }
+
+      const hasRemoteData = data.students.length > 0 || Object.keys(data.attendance).length > 0;
+      const hasLocalData = students.length > 0 || Object.keys(attendance).length > 0;
+
+      if (hasRemoteData || !hasLocalData) {
+        setStudents(data.students);
+        setAttendance(data.attendance);
+        setFees(data.fees);
+        setWeeklyExams(data.weekly_exams);
+        setPortions(data.portions.length > 0 ? data.portions : INITIAL_MASTER_PORTIONS);
+      }
+
+      setRemoteReady(true);
+    };
+
+    loadSharedPortalState();
+  }, []);
+
   // Sync state to localStorage
   useEffect(() => {
     localStorage.setItem('ajs_teacher_auth', isAuthenticated ? 'true' : 'false');
@@ -156,6 +190,30 @@ export function TeacherPortalProvider({ children }) {
     localStorage.setItem('ajs_teacher_exams', JSON.stringify(weeklyExams));
   }, [weeklyExams]);
 
+  useEffect(() => {
+    if (!remoteReady) return;
+
+    const saveSharedPortalState = async () => {
+      const { error } = await supabase
+        .from('portal_state')
+        .update({
+          students,
+          attendance,
+          fees,
+          weekly_exams: weeklyExams,
+          portions,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', 'main');
+
+      if (error) {
+        console.error('Failed to save shared portal data to Supabase', error);
+      }
+    };
+
+    saveSharedPortalState();
+  }, [remoteReady, students, attendance, fees, weeklyExams, portions]);
+
   const currentStudent = students.find(s => s.id === activeStudentId) || (students.length > 0 ? students[0] : null);
   const currentAttendance = currentStudent
     ? [...(attendance[currentStudent.id] || [])].sort((a, b) => b.date.localeCompare(a.date))
@@ -166,6 +224,7 @@ export function TeacherPortalProvider({ children }) {
   const loginTeacher = (passcode) => {
     if (passcode === ENV_PASSCODE) {
       setIsAuthenticated(true);
+      localStorage.setItem('apex_teacher_auth', 'true');
       return true;
     }
     return false;
