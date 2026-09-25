@@ -270,6 +270,20 @@ export function TeacherPortalProvider({ children }) {
   const currentFees = currentStudent ? (fees[currentStudent.id] || []) : [];
   const currentExams = currentStudent ? (weeklyExams[currentStudent.id] || []) : [];
 
+  useEffect(() => {
+    if (!currentStudent) return;
+    const nextClass = currentStudent.studentClass || PLUS_ONE_CLASS_NAME;
+    const nextBoard = currentStudent.board || 'State Syllabus (Kerala)';
+
+    if (selectedClass !== nextClass) {
+      setSelectedClass(nextClass);
+    }
+
+    if (selectedBoard !== nextBoard) {
+      setSelectedBoard(nextBoard);
+    }
+  }, [currentStudent, selectedClass, selectedBoard]);
+
   const loginTeacher = (passcode) => {
     if (passcode === ENV_PASSCODE) {
       setIsAuthenticated(true);
