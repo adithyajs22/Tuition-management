@@ -7,6 +7,8 @@ export default function PortionProgress() {
     portions, 
     addPortion,
     addCustomSubject,
+    updateCustomSubject,
+    deleteCustomSubject,
     updatePortionStatus, 
     deletePortion, 
     selectedClass,
@@ -16,13 +18,16 @@ export default function PortionProgress() {
     selectedSubject, 
     setSelectedSubject, 
     resetToMasterSyllabus,
-    availableSubjects
+    availableSubjects,
+    customSubjects
   } = useTeacherPortal();
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showAddSubjectModal, setShowAddSubjectModal] = useState(false);
+  const [showEditSubjectModal, setShowEditSubjectModal] = useState(false);
   const [newPortionTitle, setNewPortionTitle] = useState('');
   const [newSubjectName, setNewSubjectName] = useState('');
+  const [editingSubjectName, setEditingSubjectName] = useState('');
 
   // Portions filtered strictly by selected Class, Board, AND Subject
   const currentFilteredPortions = portions.filter(p => 
@@ -57,6 +62,17 @@ export default function PortionProgress() {
     setNewSubjectName('');
     setShowAddSubjectModal(false);
   };
+
+  const handleEditSubjectSubmit = (e) => {
+    e.preventDefault();
+    if (!editingSubjectName.trim()) return;
+
+    updateCustomSubject(selectedClass, selectedSubject, editingSubjectName);
+    setEditingSubjectName('');
+    setShowEditSubjectModal(false);
+  };
+
+  const isCustomSelectedSubject = (customSubjects[selectedClass] || []).includes(selectedSubject);
 
   return (
     <div className="py-8 bg-[#000000] text-slate-100 min-h-[85vh]">
@@ -156,7 +172,7 @@ export default function PortionProgress() {
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <button
               onClick={resetToMasterSyllabus}
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#09090b] hover:bg-[#121215] text-zinc-300 text-xs font-bold border border-[#27272a]"
@@ -173,6 +189,29 @@ export default function PortionProgress() {
               <Plus className="w-4 h-4 text-emerald-400" />
               Add Subject
             </button>
+
+            {isCustomSelectedSubject && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingSubjectName(selectedSubject);
+                    setShowEditSubjectModal(true);
+                  }}
+                  className="px-3 py-2 rounded-xl bg-[#09090b] hover:bg-[#121215] text-zinc-300 text-xs font-bold border border-[#27272a]"
+                >
+                  Edit Subject
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => deleteCustomSubject(selectedClass, selectedSubject)}
+                  className="px-3 py-2 rounded-xl bg-[#09090b] hover:bg-[#121215] text-rose-300 text-xs font-bold border border-rose-500/40"
+                >
+                  Delete Subject
+                </button>
+              </>
+            )}
 
             <button
               onClick={() => setShowAddModal(true)}
@@ -273,6 +312,43 @@ export default function PortionProgress() {
                 </button>
                 <button type="submit" className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-400 to-yellow-400 text-slate-950 text-xs font-black">
                   Save Subject
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT SUBJECT MODAL */}
+      {showEditSubjectModal && (
+        <div className="fixed inset-0 z-50 bg-[#000000]/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#09090b] border border-[#1f1f23] rounded-3xl p-6 max-w-md w-full shadow-2xl">
+            <h3 className="text-lg font-bold text-white mb-4">Edit Subject</h3>
+            <form onSubmit={handleEditSubjectSubmit} className="space-y-4">
+              <div className="bg-[#000000] p-3 rounded-xl border border-[#27272a] text-xs space-y-1">
+                <p className="text-zinc-400">Class: <strong className="text-white">{selectedClass}</strong></p>
+                <p className="text-zinc-400">Current Subject: <strong className="text-emerald-400">{selectedSubject}</strong></p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-zinc-400 mb-1">New Subject Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Computer Science"
+                  value={editingSubjectName}
+                  onChange={(e) => setEditingSubjectName(e.target.value)}
+                  className="w-full bg-[#000000] border border-[#27272a] rounded-xl px-3 py-2 text-xs text-white"
+                  required
+                  autoFocus
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button type="button" onClick={() => setShowEditSubjectModal(false)} className="px-4 py-2 rounded-xl bg-[#18181b] text-xs font-bold">
+                  Cancel
+                </button>
+                <button type="submit" className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-400 to-yellow-400 text-slate-950 text-xs font-black">
+                  Save Changes
                 </button>
               </div>
             </form>

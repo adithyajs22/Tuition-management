@@ -482,6 +482,40 @@ export function TeacherPortalProvider({ children }) {
     return true;
   };
 
+  const updateCustomSubject = (className, oldSubjectName, newSubjectName) => {
+    const trimmedOld = (oldSubjectName || '').trim();
+    const trimmedNew = (newSubjectName || '').trim();
+    if (!trimmedOld || !trimmedNew) return false;
+
+    setCustomSubjects(prev => ({
+      ...prev,
+      [className]: (prev[className] || []).map(subject => subject === trimmedOld ? trimmedNew : subject)
+    }));
+
+    setSelectedSubject(trimmedNew);
+    return true;
+  };
+
+  const deleteCustomSubject = (className, subjectName) => {
+    const trimmed = (subjectName || '').trim();
+    if (!trimmed) return false;
+
+    setCustomSubjects(prev => ({
+      ...prev,
+      [className]: (prev[className] || []).filter(subject => subject !== trimmed)
+    }));
+
+    const nextAvailable = getDefaultSubjectsForClass(className).length > 0
+      ? getDefaultSubjectsForClass(className)
+      : (customSubjects[className] || []).filter(subject => subject !== trimmed);
+
+    if (selectedSubject === trimmed) {
+      setSelectedSubject(nextAvailable[0] || '');
+    }
+
+    return true;
+  };
+
   const addPortion = (targetClass, board, subjectName, portionTitle) => {
     if (!currentStudent) return;
 
@@ -650,7 +684,10 @@ export function TeacherPortalProvider({ children }) {
       portions,
       currentExams,
       availableSubjects,
+      customSubjects,
       addCustomSubject,
+      updateCustomSubject,
+      deleteCustomSubject,
       addStudent,
       updateStudent,
       deleteStudent,
