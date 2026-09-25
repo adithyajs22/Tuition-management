@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { INITIAL_STUDENTS, INITIAL_ATTENDANCE, INITIAL_FEES, INITIAL_EXAM_SCORES, TUITION_INFO } from '../data/initialMockData';
-import { KERALA_PLUS_ONE_SYLLABUS } from '../data/keralaSyllabusData';
+import { clonePlusOneSyllabus, createStudentSyllabusMap } from './syllabusStorage';
 
 const PortalContext = createContext();
 
@@ -37,9 +37,17 @@ export function PortalProvider({ children }) {
     return saved ? JSON.parse(saved) : INITIAL_EXAM_SCORES;
   });
 
-  const [syllabusData, setSyllabusData] = useState(() => {
-    const saved = localStorage.getItem('apex_syllabus');
-    return saved ? JSON.parse(saved) : KERALA_PLUS_ONE_SYLLABUS;
+  const [studentSyllabi, setStudentSyllabi] = useState(() => {
+    const saved = localStorage.getItem('apex_student_syllabi');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (error) {
+        console.error('Failed to load student syllabi from localStorage', error);
+      }
+    }
+
+    return createStudentSyllabusMap(INITIAL_STUDENTS.map(student => student.id));
   });
 
   // Active printable receipt state
@@ -67,14 +75,25 @@ export function PortalProvider({ children }) {
   }, [examScores]);
 
   useEffect(() => {
-    localStorage.setItem('apex_syllabus', JSON.stringify(syllabusData));
-  }, [syllabusData]);
+    localStorage.setItem('apex_student_syllabi', JSON.stringify(studentSyllabi));
+  }, [studentSyllabi]);
 
   // Derived current active student
   const currentStudent = students.find(s => s.id === activeStudentId) || students[0] || null;
   const currentStudentAttendance = currentStudent ? (attendance[currentStudent.id] || []) : [];
   const currentStudentFees = currentStudent ? (fees[currentStudent.id] || []) : [];
   const currentStudentScores = currentStudent ? (examScores[currentStudent.id] || []) : [];
+  const syllabusData = currentStudent ? (studentSyllabi[currentStudent.id] || clonePlusOneSyllabus()) : clonePlusOneSyllabus();
+
+  useEffect(() => {
+    if (!currentStudent) return;
+    if (!studentSyllabi[currentStudent.id]) {
+      setStudentSyllabi(prev => ({
+        ...prev,
+        [currentStudent.id]: clonePlusOneSyllabus()
+      }));
+    }
+  }, [currentStudent, studentSyllabi]);
 
   // ==================== FULL STUDENT CRUD ====================
 
@@ -115,6 +134,10 @@ export function PortalProvider({ children }) {
 
     setAttendance(prev => ({ ...prev, [newId]: [] }));
     setExamScores(prev => ({ ...prev, [newId]: [] }));
+    setStudentSyllabi(prev => ({
+      ...prev,
+      [newId]: clonePlusOneSyllabus()
+    }));
 
     setActiveStudentId(newId);
     return newStudent;
@@ -144,6 +167,11 @@ export function PortalProvider({ children }) {
       return copy;
     });
     setExamScores(prev => {
+      const copy = { ...prev };
+      delete copy[studentId];
+      return copy;
+    });
+    setStudentSyllabi(prev => {
       const copy = { ...prev };
       delete copy[studentId];
       return copy;
@@ -224,9 +252,12 @@ export function PortalProvider({ children }) {
 
   // ==================== SYLLABUS UPDATER ====================
 
-  const updateModuleStatus = (stream, subjectId, moduleId, newStatus, newProgress) => {
-    setSyllabusData(prev => {
-      const streamModules = [...prev[stream]];
+  const updateModuleStatus = (stream, subjectId, moduleId, newStatus, newProgress, studentId = activeStudentId) => {
+    if (!studentId) return;
+
+    setStudentSyllabi(prev => {
+      const baseStudentSyllabus = prev[studentId] || clonePlusOneSyllabus();
+      const streamModules = [...baseStudentSyllabus[stream]];
       const subIndex = streamModules.findIndex(s => s.id === subjectId);
       if (subIndex === -1) return prev;
 
@@ -242,7 +273,13 @@ export function PortalProvider({ children }) {
         modules: updatedModules
       };
 
-      return { ...prev, [stream]: streamModules };
+      return {
+        ...prev,
+        [studentId]: {
+          ...baseStudentSyllabus,
+          [stream]: streamModules
+        }
+      };
     });
   };
 
@@ -251,7 +288,7 @@ export function PortalProvider({ children }) {
     setAttendance(INITIAL_ATTENDANCE);
     setFees(INITIAL_FEES);
     setExamScores(INITIAL_EXAM_SCORES);
-    setSyllabusData(KERALA_PLUS_ONE_SYLLABUS);
+    setStudentSyllabi(createStudentSyllabusMap(INITIAL_STUDENTS.map(student => student.id)));
     localStorage.clear();
   };
 
@@ -270,6 +307,7 @@ export function PortalProvider({ children }) {
       currentStudentFees,
       currentStudentScores,
       syllabusData,
+      studentSyllabi,
       activeReceipt,
       setActiveReceipt,
       addStudent,

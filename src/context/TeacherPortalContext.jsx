@@ -4,16 +4,15 @@ import { supabase } from '../lib/supabase';
 const TeacherPortalContext = createContext();
 
 export const CLASSES_LIST = [
-  'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10',
-  'Plus One (Class 11)', 'Plus Two (Class 12)'
+  'Plus One (Class 11)'
 ];
 
 export const BOARDS_LIST = [
-  'State Syllabus (Kerala)', 'CBSE'
+  'State Syllabus (Kerala)'
 ];
 
 export const SUBJECTS_LIST = [
-  'Physics', 'Chemistry', 'Mathematics', 'Biology', 'Science', 'Social Science', 'English'
+  'Physics', 'Chemistry', 'Mathematics', 'Biology'
 ];
 
 // Completely Empty Datasets by Default
@@ -22,9 +21,9 @@ const INITIAL_ATTENDANCE = {};
 const INITIAL_FEES = {};
 const INITIAL_WEEKLY_EXAMS = {};
 
-// Master Syllabus Portions Database (Preserved for Portion Progress tracking)
+// Master Syllabus Portions Database for Plus One students only.
+// Additional class chapters can be added manually from the UI when needed.
 const INITIAL_MASTER_PORTIONS = [
-  // --- PLUS ONE (CLASS 11) - STATE SYLLABUS ---
   { id: 'p11-st-p1', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Physics', portionName: 'Units and Measurements', status: 'Completed' },
   { id: 'p11-st-p2', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Physics', portionName: 'Motion in a Straight Line', status: 'Completed' },
   { id: 'p11-st-p3', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Physics', portionName: 'Motion in a Plane', status: 'Completed' },
@@ -40,11 +39,7 @@ const INITIAL_MASTER_PORTIONS = [
   { id: 'p11-st-m1', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Mathematics', portionName: 'Sets, Relations and Functions', status: 'Completed' },
   { id: 'p11-st-m2', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Mathematics', portionName: 'Trigonometric Functions', status: 'In Progress' },
 
-  { id: 'p11-st-b1', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Biology', portionName: 'The Living World & Biological Classification', status: 'Completed' },
-
-  // --- CLASS 10 ---
-  { id: 'c10-st-m1', targetClass: 'Class 10', board: 'State Syllabus (Kerala)', subject: 'Mathematics', portionName: 'Arithmetic Sequences', status: 'Completed' },
-  { id: 'c10-cb-m1', targetClass: 'Class 10', board: 'CBSE', subject: 'Mathematics', portionName: 'Real Numbers & Polynomials', status: 'Completed' }
+  { id: 'p11-st-b1', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Biology', portionName: 'The Living World & Biological Classification', status: 'Completed' }
 ];
 
 const ENV_PASSCODE = import.meta.env.VITE_PASSCODE || 'tuition1';
@@ -115,6 +110,30 @@ export function TeacherPortalProvider({ children }) {
     return {};
   });
 
+  const [studentSyllabus, setStudentSyllabus] = useState(() => {
+    const saved = localStorage.getItem('ajs_student_syllabus');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to load student syllabus from localStorage', e);
+      }
+    }
+    return {};
+  });
+
+  const [studentWeeklyExams, setStudentWeeklyExams] = useState(() => {
+    const saved = localStorage.getItem('ajs_student_weekly_exams');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to load student weekly exams from localStorage', e);
+      }
+    }
+    return {};
+  });
+
   const [portions, setPortions] = useState(() => {
     const saved = localStorage.getItem('ajs_portions_master');
     return saved ? JSON.parse(saved) : INITIAL_MASTER_PORTIONS;
@@ -126,7 +145,7 @@ export function TeacherPortalProvider({ children }) {
     const loadSharedPortalState = async () => {
       const { data, error } = await supabase
         .from('portal_state')
-        .select('students, attendance, fees, weekly_exams, portions')
+        .select('students, attendance, fees, weekly_exams, student_syllabus, student_weekly_exams, portions')
         .eq('id', 'main')
         .single();
 
@@ -136,15 +155,17 @@ export function TeacherPortalProvider({ children }) {
         return;
       }
 
-      const hasRemoteData = data.students.length > 0 || Object.keys(data.attendance).length > 0;
+      const hasRemoteData = (data.students || []).length > 0 || Object.keys(data.attendance || {}).length > 0;
       const hasLocalData = students.length > 0 || Object.keys(attendance).length > 0;
 
       if (hasRemoteData || !hasLocalData) {
-        setStudents(data.students);
-        setAttendance(data.attendance);
-        setFees(data.fees);
-        setWeeklyExams(data.weekly_exams);
-        setPortions(data.portions.length > 0 ? data.portions : INITIAL_MASTER_PORTIONS);
+        setStudents(data.students || []);
+        setAttendance(data.attendance || {});
+        setFees(data.fees || {});
+        setWeeklyExams(data.weekly_exams || {});
+        setStudentSyllabus(data.student_syllabus || {});
+        setStudentWeeklyExams(data.student_weekly_exams || {});
+        setPortions((data.portions || []).length > 0 ? (data.portions || []) : INITIAL_MASTER_PORTIONS);
       }
 
       setRemoteReady(true);
@@ -191,6 +212,14 @@ export function TeacherPortalProvider({ children }) {
   }, [weeklyExams]);
 
   useEffect(() => {
+    localStorage.setItem('ajs_student_syllabus', JSON.stringify(studentSyllabus));
+  }, [studentSyllabus]);
+
+  useEffect(() => {
+    localStorage.setItem('ajs_student_weekly_exams', JSON.stringify(studentWeeklyExams));
+  }, [studentWeeklyExams]);
+
+  useEffect(() => {
     if (!remoteReady) return;
 
     const saveSharedPortalState = async () => {
@@ -201,6 +230,8 @@ export function TeacherPortalProvider({ children }) {
           attendance,
           fees,
           weekly_exams: weeklyExams,
+          student_syllabus: studentSyllabus,
+          student_weekly_exams: studentWeeklyExams,
           portions,
           updated_at: new Date().toISOString()
         })
@@ -212,7 +243,7 @@ export function TeacherPortalProvider({ children }) {
     };
 
     saveSharedPortalState();
-  }, [remoteReady, students, attendance, fees, weeklyExams, portions]);
+  }, [remoteReady, students, attendance, fees, weeklyExams, studentSyllabus, studentWeeklyExams, portions]);
 
   const currentStudent = students.find(s => s.id === activeStudentId) || (students.length > 0 ? students[0] : null);
   const currentAttendance = currentStudent

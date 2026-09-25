@@ -4,6 +4,8 @@ create table if not exists public.portal_state (
   attendance jsonb not null default '{}'::jsonb,
   fees jsonb not null default '{}'::jsonb,
   weekly_exams jsonb not null default '{}'::jsonb,
+  student_syllabus jsonb not null default '{}'::jsonb,
+  student_weekly_exams jsonb not null default '{}'::jsonb,
   portions jsonb not null default '[]'::jsonb,
   homework_notes jsonb not null default '{}'::jsonb,
   updated_at timestamptz not null default now()
@@ -11,6 +13,12 @@ create table if not exists public.portal_state (
 
 alter table public.portal_state
 add column if not exists homework_notes jsonb not null default '{}'::jsonb;
+
+alter table public.portal_state
+add column if not exists student_syllabus jsonb not null default '{}'::jsonb;
+
+alter table public.portal_state
+add column if not exists student_weekly_exams jsonb not null default '{}'::jsonb;
 
 insert into public.portal_state (id)
 values ('main')
