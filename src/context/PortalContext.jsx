@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { INITIAL_STUDENTS, INITIAL_ATTENDANCE, INITIAL_FEES, INITIAL_EXAM_SCORES, TUITION_INFO } from '../data/initialMockData';
-import { clonePlusOneSyllabus, createStudentSyllabusMap } from './syllabusStorage';
+import { clonePlusOneSyllabus, cloneEmptySyllabus, createStudentSyllabusMap, isPlusOneStudentClass } from './syllabusStorage';
 
 const PortalContext = createContext();
 
@@ -47,7 +47,10 @@ export function PortalProvider({ children }) {
       }
     }
 
-    return createStudentSyllabusMap(INITIAL_STUDENTS.map(student => student.id));
+    return createStudentSyllabusMap(
+      INITIAL_STUDENTS.map(student => student.id),
+      INITIAL_STUDENTS.map(student => student.studentClass || student.class || student.stream || '')
+    );
   });
 
   // Active printable receipt state
@@ -83,14 +86,16 @@ export function PortalProvider({ children }) {
   const currentStudentAttendance = currentStudent ? (attendance[currentStudent.id] || []) : [];
   const currentStudentFees = currentStudent ? (fees[currentStudent.id] || []) : [];
   const currentStudentScores = currentStudent ? (examScores[currentStudent.id] || []) : [];
-  const syllabusData = currentStudent ? (studentSyllabi[currentStudent.id] || clonePlusOneSyllabus()) : clonePlusOneSyllabus();
+  const syllabusData = currentStudent
+    ? (studentSyllabi[currentStudent.id] || (isPlusOneStudentClass(currentStudent.studentClass || currentStudent.class || '') ? clonePlusOneSyllabus() : cloneEmptySyllabus()))
+    : cloneEmptySyllabus();
 
   useEffect(() => {
     if (!currentStudent) return;
     if (!studentSyllabi[currentStudent.id]) {
       setStudentSyllabi(prev => ({
         ...prev,
-        [currentStudent.id]: clonePlusOneSyllabus()
+        [currentStudent.id]: isPlusOneStudentClass(currentStudent.studentClass || currentStudent.class || '') ? clonePlusOneSyllabus() : cloneEmptySyllabus()
       }));
     }
   }, [currentStudent, studentSyllabi]);
@@ -136,7 +141,7 @@ export function PortalProvider({ children }) {
     setExamScores(prev => ({ ...prev, [newId]: [] }));
     setStudentSyllabi(prev => ({
       ...prev,
-      [newId]: clonePlusOneSyllabus()
+      [newId]: isPlusOneStudentClass(newStudent.studentClass || newStudent.class || '') ? clonePlusOneSyllabus() : cloneEmptySyllabus()
     }));
 
     setActiveStudentId(newId);

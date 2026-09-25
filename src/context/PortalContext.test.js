@@ -1,6 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createStudentSyllabusMap, createStudentExamMap } from './syllabusStorage.js';
+import { createStudentSyllabusMap, createStudentExamMap, isPlusOneStudentClass } from './syllabusStorage.js';
+
+test('non-Plus-One students do not use the Plus One master syllabus', () => {
+  assert.equal(isPlusOneStudentClass('Plus One (Class 11)'), true);
+  assert.equal(isPlusOneStudentClass('Class 9'), false);
+  assert.equal(isPlusOneStudentClass(''), false);
+});
 
 test('each student gets an independent syllabus copy', () => {
   const map = createStudentSyllabusMap(['STD-101', 'STD-102']);

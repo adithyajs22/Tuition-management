@@ -3,8 +3,18 @@ import { supabase } from '../lib/supabase';
 
 const TeacherPortalContext = createContext();
 
+const PLUS_ONE_CLASS_NAME = 'Plus One (Class 11)';
+
+const isPlusOneClass = (className = '') => {
+  const normalized = String(className || '').trim().toLowerCase();
+  return normalized === 'plus one (class 11)' || normalized === 'plus one' || normalized === 'class 11';
+};
+
+const getMasterPortionsForClass = (className = PLUS_ONE_CLASS_NAME) =>
+  isPlusOneClass(className) ? INITIAL_MASTER_PORTIONS : [];
+
 export const CLASSES_LIST = [
-  'Plus One (Class 11)'
+  'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10', 'Plus One (Class 11)', 'Plus Two (Class 12)'
 ];
 
 export const BOARDS_LIST = [
@@ -52,7 +62,7 @@ export function TeacherPortalProvider({ children }) {
   const [activeTab, setActiveTab] = useState('students');
 
   // Interactive Syllabus Dropdown Filters
-  const [selectedClass, setSelectedClass] = useState('Plus One (Class 11)');
+  const [selectedClass, setSelectedClass] = useState(PLUS_ONE_CLASS_NAME);
   const [selectedBoard, setSelectedBoard] = useState('State Syllabus (Kerala)');
   const [selectedSubject, setSelectedSubject] = useState('Physics');
 
@@ -136,7 +146,15 @@ export function TeacherPortalProvider({ children }) {
 
   const [portions, setPortions] = useState(() => {
     const saved = localStorage.getItem('ajs_portions_master');
-    return saved ? JSON.parse(saved) : INITIAL_MASTER_PORTIONS;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        return Array.isArray(parsed) ? parsed : getMasterPortionsForClass(PLUS_ONE_CLASS_NAME);
+      } catch (e) {
+        console.error('Failed to load portions from localStorage', e);
+      }
+    }
+    return getMasterPortionsForClass(PLUS_ONE_CLASS_NAME);
   });
 
   const [remoteReady, setRemoteReady] = useState(false);
@@ -165,7 +183,7 @@ export function TeacherPortalProvider({ children }) {
         setWeeklyExams(data.weekly_exams || {});
         setStudentSyllabus(data.student_syllabus || {});
         setStudentWeeklyExams(data.student_weekly_exams || {});
-        setPortions((data.portions || []).length > 0 ? (data.portions || []) : INITIAL_MASTER_PORTIONS);
+        setPortions((data.portions || []).length > 0 ? (data.portions || []) : getMasterPortionsForClass(PLUS_ONE_CLASS_NAME));
       }
 
       setRemoteReady(true);
@@ -492,8 +510,13 @@ export function TeacherPortalProvider({ children }) {
   };
 
   const resetToMasterSyllabus = () => {
-    setPortions(INITIAL_MASTER_PORTIONS);
-    localStorage.removeItem('ajs_portions_master');
+    const nextPortions = getMasterPortionsForClass(selectedClass);
+    setPortions(nextPortions);
+    if (nextPortions.length > 0) {
+      localStorage.removeItem('ajs_portions_master');
+    } else {
+      localStorage.setItem('ajs_portions_master', JSON.stringify([]));
+    }
   };
 
   const clearAllStudentData = () => {
