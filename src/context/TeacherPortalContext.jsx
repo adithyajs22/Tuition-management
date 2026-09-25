@@ -163,17 +163,16 @@ export function TeacherPortalProvider({ children }) {
     return {};
   });
 
-  const [portions, setPortions] = useState(() => {
-    const saved = localStorage.getItem('ajs_portions_master');
+  const [studentPortions, setStudentPortions] = useState(() => {
+    const saved = localStorage.getItem('ajs_student_portions');
     if (saved) {
       try {
-        const parsed = JSON.parse(saved);
-        return Array.isArray(parsed) ? parsed : getMasterPortionsForClass(PLUS_ONE_CLASS_NAME);
+        return JSON.parse(saved);
       } catch (e) {
-        console.error('Failed to load portions from localStorage', e);
+        console.error('Failed to load student portions from localStorage', e);
       }
     }
-    return getMasterPortionsForClass(PLUS_ONE_CLASS_NAME);
+    return {};
   });
 
   const [remoteReady, setRemoteReady] = useState(false);
@@ -202,7 +201,7 @@ export function TeacherPortalProvider({ children }) {
         setWeeklyExams(data.weekly_exams || {});
         setStudentSyllabus(data.student_syllabus || {});
         setStudentWeeklyExams(data.student_weekly_exams || {});
-        setPortions((data.portions || []).length > 0 ? (data.portions || []) : getMasterPortionsForClass(PLUS_ONE_CLASS_NAME));
+        setStudentPortions({});
       }
 
       setRemoteReady(true);
@@ -241,8 +240,8 @@ export function TeacherPortalProvider({ children }) {
   }, [fees]);
 
   useEffect(() => {
-    localStorage.setItem('ajs_portions_master', JSON.stringify(portions));
-  }, [portions]);
+    localStorage.setItem('ajs_student_portions', JSON.stringify(studentPortions));
+  }, [studentPortions]);
 
   useEffect(() => {
     localStorage.setItem('ajs_teacher_exams', JSON.stringify(weeklyExams));
@@ -269,7 +268,7 @@ export function TeacherPortalProvider({ children }) {
           weekly_exams: weeklyExams,
           student_syllabus: studentSyllabus,
           student_weekly_exams: studentWeeklyExams,
-          portions,
+          portions: Object.values(studentPortions).flat(),
           updated_at: new Date().toISOString()
         })
         .eq('id', 'main');
@@ -280,7 +279,7 @@ export function TeacherPortalProvider({ children }) {
     };
 
     saveSharedPortalState();
-  }, [remoteReady, students, attendance, fees, weeklyExams, studentSyllabus, studentWeeklyExams, portions]);
+  }, [remoteReady, students, attendance, fees, weeklyExams, studentSyllabus, studentWeeklyExams, studentPortions]);
 
   const currentStudent = students.find(s => s.id === activeStudentId) || (students.length > 0 ? students[0] : null);
   const currentAttendance = currentStudent
@@ -288,6 +287,7 @@ export function TeacherPortalProvider({ children }) {
     : [];
   const currentFees = currentStudent ? (fees[currentStudent.id] || []) : [];
   const currentExams = currentStudent ? (weeklyExams[currentStudent.id] || []) : [];
+  const portions = currentStudent ? (studentPortions[currentStudent.id] || getMasterPortionsForClass(currentStudent.studentClass || PLUS_ONE_CLASS_NAME)) : [];
 
   const availableSubjects = React.useMemo(() => {
     const classSubjects = customSubjects[selectedClass] || [];
@@ -307,6 +307,16 @@ export function TeacherPortalProvider({ children }) {
     if (selectedBoard !== nextBoard) {
       setSelectedBoard(nextBoard);
     }
+
+    setStudentPortions(prev => {
+      if (!prev[currentStudent.id]) {
+        return {
+          ...prev,
+          [currentStudent.id]: getMasterPortionsForClass(nextClass)
+        };
+      }
+      return prev;
+    });
   }, [currentStudent, selectedClass, selectedBoard]);
 
   useEffect(() => {
@@ -473,6 +483,8 @@ export function TeacherPortalProvider({ children }) {
   };
 
   const addPortion = (targetClass, board, subjectName, portionTitle) => {
+    if (!currentStudent) return;
+
     const newPortion = {
       id: 'por-' + Date.now(),
       targetClass,
@@ -481,15 +493,29 @@ export function TeacherPortalProvider({ children }) {
       portionName: portionTitle,
       status: 'Not Started'
     };
-    setPortions(prev => [...prev, newPortion]);
+
+    setStudentPortions(prev => ({
+      ...prev,
+      [currentStudent.id]: [...(prev[currentStudent.id] || []), newPortion]
+    }));
   };
 
   const updatePortionStatus = (portionId, newStatus) => {
-    setPortions(prev => prev.map(p => (p.id === portionId ? { ...p, status: newStatus } : p)));
+    if (!currentStudent) return;
+
+    setStudentPortions(prev => ({
+      ...prev,
+      [currentStudent.id]: (prev[currentStudent.id] || []).map(p => (p.id === portionId ? { ...p, status: newStatus } : p))
+    }));
   };
 
   const deletePortion = (portionId) => {
-    setPortions(prev => prev.filter(p => p.id !== portionId));
+    if (!currentStudent) return;
+
+    setStudentPortions(prev => ({
+      ...prev,
+      [currentStudent.id]: (prev[currentStudent.id] || []).filter(p => p.id !== portionId)
+    }));
   };
 
   // Weekly Exam CRUD
@@ -572,13 +598,12 @@ export function TeacherPortalProvider({ children }) {
   };
 
   const resetToMasterSyllabus = () => {
+    if (!currentStudent) return;
     const nextPortions = getMasterPortionsForClass(selectedClass);
-    setPortions(nextPortions);
-    if (nextPortions.length > 0) {
-      localStorage.removeItem('ajs_portions_master');
-    } else {
-      localStorage.setItem('ajs_portions_master', JSON.stringify([]));
-    }
+    setStudentPortions(prev => ({
+      ...prev,
+      [currentStudent.id]: nextPortions
+    }));
   };
 
   const clearAllStudentData = () => {
@@ -586,11 +611,17 @@ export function TeacherPortalProvider({ children }) {
     setAttendance({});
     setFees({});
     setWeeklyExams({});
+    setStudentSyllabus({});
+    setStudentWeeklyExams({});
+    setStudentPortions({});
     setActiveStudentId('');
     localStorage.removeItem('ajs_teacher_students');
     localStorage.removeItem('ajs_teacher_attendance');
     localStorage.removeItem('ajs_teacher_fees');
     localStorage.removeItem('ajs_teacher_exams');
+    localStorage.removeItem('ajs_student_syllabus');
+    localStorage.removeItem('ajs_student_weekly_exams');
+    localStorage.removeItem('ajs_student_portions');
   };
 
   return (
