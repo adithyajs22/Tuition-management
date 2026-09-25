@@ -24,7 +24,15 @@ export const BOARDS_LIST = [
 export const SUBJECTS_LIST = [
   'Physics', 'Chemistry', 'Mathematics', 'Biology'
 ];
+const isSyllabusLockedClass = (className = '') => {
+  const normalized = String(className || '').trim().toLowerCase();
+  return normalized === 'plus one (class 11)' || normalized === 'plus one' || normalized === 'class 11'
+    || normalized === 'plus two (class 12)' || normalized === 'plus two' || normalized === 'class 12';
+};
 
+const getDefaultSubjectsForClass = (className = '') => {
+  return isSyllabusLockedClass(className) ? SUBJECTS_LIST : [];
+};
 // Completely Empty Datasets by Default
 const INITIAL_TEACHER_STUDENTS = [];
 const INITIAL_ATTENDANCE = {};
@@ -65,6 +73,17 @@ export function TeacherPortalProvider({ children }) {
   const [selectedClass, setSelectedClass] = useState(PLUS_ONE_CLASS_NAME);
   const [selectedBoard, setSelectedBoard] = useState('State Syllabus (Kerala)');
   const [selectedSubject, setSelectedSubject] = useState('Physics');
+  const [customSubjects, setCustomSubjects] = useState(() => {
+    const saved = localStorage.getItem('ajs_custom_subjects');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to load custom subjects from localStorage', e);
+      }
+    }
+    return {};
+  });
 
   const [selectedClassFilter, setSelectedClassFilter] = useState('All');
   const [selectedBoardFilter, setSelectedBoardFilter] = useState('All');
@@ -270,6 +289,12 @@ export function TeacherPortalProvider({ children }) {
   const currentFees = currentStudent ? (fees[currentStudent.id] || []) : [];
   const currentExams = currentStudent ? (weeklyExams[currentStudent.id] || []) : [];
 
+  const availableSubjects = React.useMemo(() => {
+    const classSubjects = customSubjects[selectedClass] || [];
+    const defaults = getDefaultSubjectsForClass(selectedClass);
+    return defaults.length > 0 ? defaults : classSubjects.length > 0 ? classSubjects : ['General'];
+  }, [selectedClass, customSubjects]);
+
   useEffect(() => {
     if (!currentStudent) return;
     const nextClass = currentStudent.studentClass || PLUS_ONE_CLASS_NAME;
@@ -283,6 +308,16 @@ export function TeacherPortalProvider({ children }) {
       setSelectedBoard(nextBoard);
     }
   }, [currentStudent, selectedClass, selectedBoard]);
+
+  useEffect(() => {
+    if (!availableSubjects.includes(selectedSubject)) {
+      setSelectedSubject(availableSubjects[0] || '');
+    }
+  }, [availableSubjects, selectedSubject]);
+
+  useEffect(() => {
+    localStorage.setItem('ajs_custom_subjects', JSON.stringify(customSubjects));
+  }, [customSubjects]);
 
   const loginTeacher = (passcode) => {
     if (passcode === ENV_PASSCODE) {
@@ -424,6 +459,19 @@ export function TeacherPortalProvider({ children }) {
   };
 
   // Custom Portion CRUD
+  const addCustomSubject = (className, subjectName) => {
+    const trimmed = (subjectName || '').trim();
+    if (!trimmed) return false;
+
+    setCustomSubjects(prev => ({
+      ...prev,
+      [className]: Array.from(new Set([...(prev[className] || []), trimmed]))
+    }));
+
+    setSelectedSubject(trimmed);
+    return true;
+  };
+
   const addPortion = (targetClass, board, subjectName, portionTitle) => {
     const newPortion = {
       id: 'por-' + Date.now(),
@@ -570,6 +618,8 @@ export function TeacherPortalProvider({ children }) {
       currentFees,
       portions,
       currentExams,
+      availableSubjects,
+      addCustomSubject,
       addStudent,
       updateStudent,
       deleteStudent,

@@ -5,7 +5,8 @@ import { BookOpen, Plus, Trash2, RefreshCw, Filter } from 'lucide-react';
 export default function PortionProgress() {
   const { 
     portions, 
-    addPortion, 
+    addPortion,
+    addCustomSubject,
     updatePortionStatus, 
     deletePortion, 
     selectedClass,
@@ -14,11 +15,14 @@ export default function PortionProgress() {
     setSelectedBoard,
     selectedSubject, 
     setSelectedSubject, 
-    resetToMasterSyllabus 
+    resetToMasterSyllabus,
+    availableSubjects
   } = useTeacherPortal();
 
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showAddSubjectModal, setShowAddSubjectModal] = useState(false);
   const [newPortionTitle, setNewPortionTitle] = useState('');
+  const [newSubjectName, setNewSubjectName] = useState('');
 
   // Portions filtered strictly by selected Class, Board, AND Subject
   const currentFilteredPortions = portions.filter(p => 
@@ -43,6 +47,15 @@ export default function PortionProgress() {
     addPortion(selectedClass, selectedBoard, selectedSubject, newPortionTitle);
     setNewPortionTitle('');
     setShowAddModal(false);
+  };
+
+  const handleAddSubjectSubmit = (e) => {
+    e.preventDefault();
+    if (!newSubjectName.trim()) return;
+
+    addCustomSubject(selectedClass, newSubjectName);
+    setNewSubjectName('');
+    setShowAddSubjectModal(false);
   };
 
   return (
@@ -127,7 +140,7 @@ export default function PortionProgress() {
               onChange={(e) => setSelectedSubject(e.target.value)}
               className="w-full bg-[#000000] border border-[#27272a] rounded-xl px-3.5 py-2.5 text-sm font-bold text-white focus:outline-none focus:border-emerald-400 cursor-pointer shadow-inner"
             >
-              {SUBJECTS_LIST.map(s => (
+              {availableSubjects.map(s => (
                 <option key={s} value={s} className="bg-[#09090b] text-white font-bold">{s}</option>
               ))}
             </select>
@@ -151,6 +164,14 @@ export default function PortionProgress() {
             >
               <RefreshCw className="w-3.5 h-3.5 text-yellow-400" />
               Reset Database
+            </button>
+
+            <button
+              onClick={() => setShowAddSubjectModal(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#09090b] hover:bg-[#121215] text-zinc-300 text-xs font-bold border border-[#27272a]"
+            >
+              <Plus className="w-4 h-4 text-emerald-400" />
+              Add Subject
             </button>
 
             <button
@@ -222,6 +243,42 @@ export default function PortionProgress() {
         </div>
 
       </div>
+
+      {/* ADD SUBJECT MODAL */}
+      {showAddSubjectModal && (
+        <div className="fixed inset-0 z-50 bg-[#000000]/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#09090b] border border-[#1f1f23] rounded-3xl p-6 max-w-md w-full shadow-2xl">
+            <h3 className="text-lg font-bold text-white mb-4">Add Custom Subject</h3>
+            <form onSubmit={handleAddSubjectSubmit} className="space-y-4">
+              <div className="bg-[#000000] p-3 rounded-xl border border-[#27272a] text-xs space-y-1">
+                <p className="text-zinc-400">Class: <strong className="text-white">{selectedClass}</strong></p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-zinc-400 mb-1">Subject Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Computer Science"
+                  value={newSubjectName}
+                  onChange={(e) => setNewSubjectName(e.target.value)}
+                  className="w-full bg-[#000000] border border-[#27272a] rounded-xl px-3 py-2 text-xs text-white"
+                  required
+                  autoFocus
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button type="button" onClick={() => setShowAddSubjectModal(false)} className="px-4 py-2 rounded-xl bg-[#18181b] text-xs font-bold">
+                  Cancel
+                </button>
+                <button type="submit" className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-400 to-yellow-400 text-slate-950 text-xs font-black">
+                  Save Subject
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* ADD PORTION MODAL */}
       {showAddModal && (
