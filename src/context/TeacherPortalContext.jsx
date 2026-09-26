@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { buildPortalStatePayload, hasMeaningfulSharedData } from './portalSync';
 
 const TeacherPortalContext = createContext();
 
@@ -181,27 +182,52 @@ export function TeacherPortalProvider({ children }) {
     const loadSharedPortalState = async () => {
       const { data, error } = await supabase
         .from('portal_state')
-        .select('students, attendance, fees, weekly_exams, student_syllabus, student_weekly_exams, portions')
+        .select('id, students, attendance, fees, weekly_exams, student_syllabus, student_weekly_exams, portions, homework_notes, updated_at')
         .eq('id', 'main')
-        .single();
+        .maybeSingle();
 
-      if (error) {
+      if (error && error.code !== 'PGRST116') {
         console.error('Failed to load shared portal data from Supabase', error);
-        setRemoteReady(true);
-        return;
       }
 
-      const hasRemoteData = (data.students || []).length > 0 || Object.keys(data.attendance || {}).length > 0;
-      const hasLocalData = students.length > 0 || Object.keys(attendance).length > 0;
+      const remoteData = data || {};
+      const hasRemoteData = hasMeaningfulSharedData(remoteData);
+      const hasLocalData = hasMeaningfulSharedData({
+        students,
+        attendance,
+        fees,
+        weekly_exams: weeklyExams,
+        student_syllabus: studentSyllabus,
+        student_weekly_exams: studentWeeklyExams,
+        portions: Object.values(studentPortions).flat()
+      });
 
-      if (hasRemoteData || !hasLocalData) {
-        setStudents(data.students || []);
-        setAttendance(data.attendance || {});
-        setFees(data.fees || {});
-        setWeeklyExams(data.weekly_exams || {});
-        setStudentSyllabus(data.student_syllabus || {});
-        setStudentWeeklyExams(data.student_weekly_exams || {});
+      if (hasRemoteData) {
+        setStudents(remoteData.students || []);
+        setAttendance(remoteData.attendance || {});
+        setFees(remoteData.fees || {});
+        setWeeklyExams(remoteData.weekly_exams || {});
+        setStudentSyllabus(remoteData.student_syllabus || {});
+        setStudentWeeklyExams(remoteData.student_weekly_exams || {});
         setStudentPortions({});
+      } else if (hasLocalData) {
+        const payload = buildPortalStatePayload({
+          students,
+          attendance,
+          fees,
+          weekly_exams: weeklyExams,
+          student_syllabus: studentSyllabus,
+          student_weekly_exams: studentWeeklyExams,
+          portions: Object.values(studentPortions).flat()
+        });
+
+        const { error: upsertError } = await supabase
+          .from('portal_state')
+          .upsert(payload, { onConflict: 'id' });
+
+        if (upsertError) {
+          console.error('Failed to seed shared portal data to Supabase', upsertError);
+        }
       }
 
       setRemoteReady(true);
@@ -259,19 +285,20 @@ export function TeacherPortalProvider({ children }) {
     if (!remoteReady) return;
 
     const saveSharedPortalState = async () => {
+      const payload = buildPortalStatePayload({
+        students,
+        attendance,
+        fees,
+        weekly_exams: weeklyExams,
+        student_syllabus: studentSyllabus,
+        student_weekly_exams: studentWeeklyExams,
+        portions: Object.values(studentPortions).flat(),
+        homework_notes: {}
+      });
+
       const { error } = await supabase
         .from('portal_state')
-        .update({
-          students,
-          attendance,
-          fees,
-          weekly_exams: weeklyExams,
-          student_syllabus: studentSyllabus,
-          student_weekly_exams: studentWeeklyExams,
-          portions: Object.values(studentPortions).flat(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', 'main');
+        .upsert(payload, { onConflict: 'id' });
 
       if (error) {
         console.error('Failed to save shared portal data to Supabase', error);

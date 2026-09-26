@@ -35,11 +35,11 @@ function useStudentNotes() {
         .from('portal_state')
         .select('homework_notes')
         .eq('id', 'main')
-        .single();
+        .maybeSingle();
 
-      if (error) {
+      if (error && error.code !== 'PGRST116') {
         console.error('Failed to load homework notes from Supabase', error);
-      } else if (Object.keys(data.homework_notes || {}).length > 0) {
+      } else if (data && Object.keys(data.homework_notes || {}).length > 0) {
         setNotesMap(data.homework_notes);
       }
 
@@ -55,8 +55,11 @@ function useStudentNotes() {
     const saveNotesToSupabase = async () => {
       const { error } = await supabase
         .from('portal_state')
-        .update({ homework_notes: notesMap, updated_at: new Date().toISOString() })
-        .eq('id', 'main');
+        .upsert({
+          id: 'main',
+          homework_notes: notesMap,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'id' });
 
       if (error) {
         console.error('Failed to save homework notes to Supabase', error);
