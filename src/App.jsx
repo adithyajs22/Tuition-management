@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { TeacherPortalProvider, useTeacherPortal } from './context/TeacherPortalContext';
+import { supabase } from './lib/supabase';
 import TeacherLogin from './components/TeacherLogin';
 import MinimalNavbar from './components/MinimalNavbar';
 import StudentManager from './components/StudentManager';
@@ -53,6 +54,22 @@ function TeacherPortalMain() {
 }
 
 export default function App() {
+  useEffect(() => {
+    const pingSupabase = async () => {
+      const { error } = await supabase
+        .from('portal_state')
+        .select('id')
+        .eq('id', 'main')
+        .maybeSingle();
+
+      if (error) {
+        console.error('Supabase heartbeat failed', error);
+      }
+    };
+
+    pingSupabase();
+  }, []);
+
   return (
     <TeacherPortalProvider>
       <TeacherPortalMain />
