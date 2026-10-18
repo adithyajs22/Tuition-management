@@ -47,6 +47,12 @@ test('shared portal payload is created with the shared row id and all shared col
   assert.deepEqual(payload.homework_notes, { 'STD-101': [{ id: 'n-1', title: 'Read chapter' }] });
 });
 
+test('shared portal payload leaves homework notes untouched when notes are not supplied', () => {
+  const payload = buildPortalStatePayload({ students: [{ id: 'STD-101' }] });
+
+  assert.equal(Object.prototype.hasOwnProperty.call(payload, 'homework_notes'), false);
+});
+
 test('meaningful shared data is detected only when collections actually contain records', () => {
   assert.equal(hasMeaningfulSharedData({ students: [] }), false);
   assert.equal(hasMeaningfulSharedData({ students: [{ id: 'STD-101' }] }), true);

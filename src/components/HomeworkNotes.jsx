@@ -7,12 +7,12 @@ import {
 } from 'lucide-react';
 
 const NOTE_TYPES = [
-  { value: 'homework', label: '📝 Homework', color: '#00FFFF' },
-  { value: 'next_topic', label: '📚 Next Topic / Section', color: '#CCFF00' },
-  { value: 'revision', label: '🔄 Revision Task', color: '#FF00FF' },
-  { value: 'test_prep', label: '🎯 Test Preparation', color: '#CCFF00' },
-  { value: 'general', label: '💡 General Note', color: 'rgba(255,255,255,0.7)' },
-  { value: 'urgent', label: '⚠️ Urgent / Important', color: '#FF00FF' },
+  { value: 'homework', label: '📝 Homework', color: '#00FFFF', tint: 'rgba(0,255,255,0.09)' },
+  { value: 'next_topic', label: '📚 Next Topic / Section', color: '#CCFF00', tint: 'rgba(204,255,0,0.08)' },
+  { value: 'revision', label: '🔄 Revision Task', color: '#FF70D8', tint: 'rgba(255,0,255,0.09)' },
+  { value: 'test_prep', label: '🎯 Test Preparation', color: '#A78BFA', tint: 'rgba(139,92,246,0.12)' },
+  { value: 'general', label: '💡 General Note', color: '#CBD5E1', tint: 'rgba(148,163,184,0.1)' },
+  { value: 'urgent', label: '⚠️ Urgent / Important', color: '#FB7185', tint: 'rgba(244,63,94,0.11)' },
 ];
 
 const STATUS_OPTIONS = ['Pending', 'Completed', 'In Progress'];
@@ -178,9 +178,15 @@ export default function HomeworkNotes() {
   };
 
   const getPriorityBadge = (p) => {
-    if (p === 'High') return { label: '🔴 High', color: '#FF00FF' };
-    if (p === 'Low') return { label: '🟢 Low', color: '#CCFF00' };
-    return { label: '🔵 Normal', color: '#00FFFF' };
+    if (p === 'High') return { label: 'HIGH PRIORITY', color: '#FB7185', bg: 'rgba(244,63,94,0.13)', border: 'rgba(251,113,133,0.45)' };
+    if (p === 'Low') return { label: 'LOW PRIORITY', color: '#A3E635', bg: 'rgba(163,230,53,0.12)', border: 'rgba(163,230,53,0.4)' };
+    return { label: 'NORMAL PRIORITY', color: '#67E8F9', bg: 'rgba(6,182,212,0.12)', border: 'rgba(103,232,249,0.4)' };
+  };
+
+  const getPriorityCardStyle = (p) => {
+    if (p === 'High') return { color: '#FB7185', tint: 'rgba(244,63,94,0.07)', border: 'rgba(251,113,133,0.52)' };
+    if (p === 'Low') return { color: '#A3E635', tint: 'rgba(163,230,53,0.06)', border: 'rgba(163,230,53,0.42)' };
+    return { color: '#67E8F9', tint: 'rgba(6,182,212,0.06)', border: 'rgba(103,232,249,0.4)' };
   };
 
   if (!currentStudent) {
@@ -322,6 +328,7 @@ export default function HomeworkNotes() {
               const typeConf = getNoteTypeConfig(note.type);
               const statusStyle = getStatusStyle(note.status);
               const priorityBadge = getPriorityBadge(note.priority);
+              const priorityStyle = getPriorityCardStyle(note.priority);
               const isOverdue = note.dueDate && new Date(note.dueDate) < new Date() && note.status !== 'Completed';
 
               return (
@@ -329,9 +336,10 @@ export default function HomeworkNotes() {
                   key={note.id}
                   className="rounded-2xl p-5 flex flex-col justify-between border transition-all"
                   style={{
-                    background: 'rgba(13, 16, 69, 0.85)',
-                    borderColor: isOverdue ? 'rgba(255,0,255,0.5)' : 'rgba(0,255,255,0.15)',
-                    boxShadow: isOverdue ? '0 0 20px rgba(255,0,255,0.1)' : '0 0 12px rgba(0,0,0,0.3)'
+                    background: `linear-gradient(145deg, ${typeConf.tint}, ${priorityStyle.tint}), rgba(13, 16, 69, 0.96)`,
+                    borderColor: isOverdue ? 'rgba(255,0,255,0.7)' : typeConf.color,
+                    borderLeft: `4px solid ${priorityStyle.color}`,
+                    boxShadow: `0 0 18px ${typeConf.tint}, 0 0 14px ${priorityStyle.tint}`
                   }}
                 >
                   {/* Card Header */}
@@ -357,7 +365,7 @@ export default function HomeworkNotes() {
                       </p>
                     )}
 
-                    <div className="space-y-1.5 text-xs border-t pt-3" style={{ borderColor: 'rgba(0,255,255,0.1)' }}>
+                    <div className="space-y-2 text-xs border-t pt-3" style={{ borderColor: `${typeConf.color}40` }}>
                       <div className="flex justify-between">
                         <span style={{ color: 'rgba(255,255,255,0.4)' }}>Created:</span>
                         <span className="font-semibold text-white">{note.createdAt}</span>
@@ -370,9 +378,17 @@ export default function HomeworkNotes() {
                           </span>
                         </div>
                       )}
-                      <div className="flex justify-between">
-                        <span style={{ color: 'rgba(255,255,255,0.4)' }}>Priority:</span>
-                        <span className="font-bold text-[11px]" style={{ color: priorityBadge.color }}>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.55)' }}>Priority</span>
+                        <span
+                          className="inline-flex items-center rounded-full px-2.5 py-1 font-black text-[10px] tracking-wide border"
+                          style={{
+                            color: priorityBadge.color,
+                            background: priorityBadge.bg,
+                            borderColor: priorityBadge.border,
+                            boxShadow: `0 0 12px ${priorityBadge.bg}`
+                          }}
+                        >
                           {priorityBadge.label}
                         </span>
                       </div>

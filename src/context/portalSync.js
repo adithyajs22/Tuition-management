@@ -7,7 +7,9 @@ export const buildPortalStatePayload = (state = {}) => ({
   student_syllabus: state.student_syllabus || {},
   student_weekly_exams: state.student_weekly_exams || {},
   portions: state.portions || [],
-  homework_notes: state.homework_notes || {},
+  ...(Object.prototype.hasOwnProperty.call(state, 'homework_notes')
+    ? { homework_notes: state.homework_notes || {} }
+    : {}),
   updated_at: new Date().toISOString()
 });
 
