@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTeacherPortal } from '../context/TeacherPortalContext';
 import { GraduationCap, ArrowRight, KeyRound, Sparkles, Eye, EyeOff } from 'lucide-react';
 
-const envPasscode = import.meta.env.VITE_PASSCODE || 'tuition1';
-
 export default function TeacherLogin() {
   const { loginTeacher } = useTeacherPortal();
+  const navigate = useNavigate();
   const [passcode, setPasscode] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [showPasscode, setShowPasscode] = useState(false);
@@ -13,8 +13,10 @@ export default function TeacherLogin() {
   const handleSubmit = (e) => {
     e.preventDefault();
     const success = loginTeacher(passcode);
-    if (!success) {
-      setErrorMsg(`Invalid Passcode! Please try again.`);
+    if (success) {
+      navigate('/students', { replace: true });
+    } else {
+      setErrorMsg('Invalid Passcode! Please try again.');
     }
   };
 

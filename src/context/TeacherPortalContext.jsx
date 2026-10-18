@@ -144,8 +144,6 @@ export function TeacherPortalProvider({ children }) {
     return localStorage.getItem('apex_teacher_auth') === 'true';
   });
 
-  const [activeTab, setActiveTab] = useState('students');
-
   // Interactive Syllabus Dropdown Filters
   const [selectedClass, setSelectedClass] = useState(PLUS_ONE_CLASS_NAME);
   const [selectedBoard, setSelectedBoard] = useState('State Syllabus (Kerala)');
@@ -816,8 +814,6 @@ export function TeacherPortalProvider({ children }) {
       isAuthenticated,
       loginTeacher,
       logoutTeacher,
-      activeTab,
-      setActiveTab,
       selectedClass,
       setSelectedClass,
       selectedBoard,

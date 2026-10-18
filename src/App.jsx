@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import { TeacherPortalProvider, useTeacherPortal } from './context/TeacherPortalContext';
 import { supabase } from './lib/supabase';
 import TeacherLogin from './components/TeacherLogin';
@@ -10,11 +11,11 @@ import PortionProgress from './components/PortionProgress';
 import WeeklyExams from './components/WeeklyExams';
 import HomeworkNotes from './components/HomeworkNotes';
 
-function TeacherPortalMain() {
-  const { isAuthenticated, activeTab } = useTeacherPortal();
+function ProtectedPortal() {
+  const { isAuthenticated } = useTeacherPortal();
 
   if (!isAuthenticated) {
-    return <TeacherLogin />;
+    return <Navigate to="/login" replace />;
   }
 
   return (
@@ -29,12 +30,7 @@ function TeacherPortalMain() {
         <MinimalNavbar />
 
         <main className="animate-fadeIn">
-          {activeTab === 'students' && <StudentManager />}
-          {activeTab === 'attendance' && <AttendanceTracker />}
-          {activeTab === 'fees' && <FeePaymentsLog />}
-          {activeTab === 'portions' && <PortionProgress />}
-          {activeTab === 'exams' && <WeeklyExams />}
-          {activeTab === 'notes' && <HomeworkNotes />}
+          <Outlet />
         </main>
       </div>
 
@@ -50,6 +46,30 @@ function TeacherPortalMain() {
         </div>
       </footer>
     </div>
+  );
+}
+
+function TeacherPortalMain() {
+  const { isAuthenticated } = useTeacherPortal();
+
+  return (
+    <Routes>
+      <Route
+        path="/login"
+        element={isAuthenticated ? <Navigate to="/students" replace /> : <TeacherLogin />}
+      />
+      <Route element={<ProtectedPortal />}>
+        <Route index element={<Navigate to="/students" replace />} />
+        <Route path="home" element={<Navigate to="/students" replace />} />
+        <Route path="students" element={<StudentManager />} />
+        <Route path="attendance" element={<AttendanceTracker />} />
+        <Route path="fees" element={<FeePaymentsLog />} />
+        <Route path="syllabus" element={<PortionProgress />} />
+        <Route path="exams" element={<WeeklyExams />} />
+        <Route path="notes" element={<HomeworkNotes />} />
+      </Route>
+      <Route path="*" element={<Navigate to={isAuthenticated ? '/students' : '/login'} replace />} />
+    </Routes>
   );
 }
 

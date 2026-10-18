@@ -1,11 +1,19 @@
 import React from 'react';
+import { Link, NavLink } from 'react-router-dom';
 import { useTeacherPortal } from '../context/TeacherPortalContext';
 import { GraduationCap, Users, Calendar, CreditCard, BookOpen, Award, LogOut, UserCheck, Plus, ClipboardList } from 'lucide-react';
 
+const PORTAL_NAV_ITEMS = [
+  { path: '/syllabus', label: 'Syllabus', mobileLabel: 'Portions', Icon: BookOpen, color: '#CCFF00' },
+  { path: '/students', label: 'Students', mobileLabel: 'Students', Icon: Users, color: '#00FFFF' },
+  { path: '/attendance', label: 'Attendance', mobileLabel: 'Attend.', Icon: Calendar, color: '#FF00FF' },
+  { path: '/fees', label: 'Fee Payments', mobileLabel: 'Fees', Icon: CreditCard, color: '#CCFF00' },
+  { path: '/exams', label: 'Weekly Exams', mobileLabel: 'Exams', Icon: Award, color: '#00FFFF' },
+  { path: '/notes', label: 'Homework & Notes', mobileLabel: 'Notes', Icon: ClipboardList, color: '#FF00FF' },
+];
+
 export default function MinimalNavbar() {
   const { 
-    activeTab, 
-    setActiveTab, 
     logoutTeacher,
     students,
     activeStudentId,
@@ -23,7 +31,7 @@ export default function MinimalNavbar() {
         <div className="flex items-center justify-between min-h-20 py-3 gap-2">
           
           {/* Brand */}
-          <div className="flex items-center gap-3 cursor-pointer min-w-0 flex-1" onClick={() => setActiveTab('portions')}>
+          <Link to="/syllabus" className="flex items-center gap-3 cursor-pointer min-w-0 flex-1">
             <div className="w-11 h-11 rounded-xl flex items-center justify-center shadow-lg"
               style={{
                 background: 'linear-gradient(135deg, #FF00FF, #00FFFF)',
@@ -51,27 +59,20 @@ export default function MinimalNavbar() {
                 State & CBSE Management System
               </p>
             </div>
-          </div>
+          </Link>
 
           {/* Core Navigation Tabs */}
           <nav className="hidden lg:flex items-center gap-1 p-1.5 rounded-xl border"
             style={{ background: 'rgba(13, 16, 69, 0.8)', borderColor: 'rgba(0, 255, 255, 0.15)' }}>
-            {[
-              { key: 'portions', label: 'Syllabus', Icon: BookOpen, color: '#CCFF00' },
-              { key: 'students', label: `Students (${students.length})`, Icon: Users, color: '#00FFFF' },
-              { key: 'attendance', label: 'Attendance', Icon: Calendar, color: '#FF00FF' },
-              { key: 'fees', label: 'Fee Payments', Icon: CreditCard, color: '#CCFF00' },
-              { key: 'exams', label: 'Weekly Exams', Icon: Award, color: '#00FFFF' },
-              { key: 'notes', label: 'Homework & Notes', Icon: ClipboardList, color: '#FF00FF' },
-            ].map(({ key, label, Icon, color }) => (
-              <button
-                key={key}
-                onClick={() => setActiveTab(key)}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all`}
-                style={activeTab === key
+            {PORTAL_NAV_ITEMS.map(({ path, label, Icon, color }) => (
+              <NavLink
+                key={path}
+                to={path}
+                className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all"
+                style={({ isActive }) => isActive
                   ? {
                       background: 'rgba(0,0,0,0.4)',
-                      color: color,
+                      color,
                       border: `1px solid ${color}40`,
                       boxShadow: `0 0 12px ${color}30`
                     }
@@ -80,9 +81,9 @@ export default function MinimalNavbar() {
                       border: '1px solid transparent'
                     }}
               >
-                <Icon className="w-3.5 h-3.5" style={{ color: activeTab === key ? color : 'rgba(255,255,255,0.4)' }} />
-                {label}
-              </button>
+                <Icon className="w-3.5 h-3.5" />
+                {path === '/students' ? `${label} (${students.length})` : label}
+              </NavLink>
             ))}
           </nav>
 
@@ -115,8 +116,8 @@ export default function MinimalNavbar() {
                 </div>
               </div>
             ) : (
-              <button
-                onClick={() => setActiveTab('students')}
+              <Link
+                to="/students"
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-extrabold text-xs border"
                 style={{
                   background: 'rgba(255, 0, 255, 0.12)',
@@ -126,7 +127,7 @@ export default function MinimalNavbar() {
               >
                 <Plus className="w-4 h-4" />
                 Add First Student
-              </button>
+              </Link>
             )}
 
             {/* Logout */}
@@ -150,23 +151,16 @@ export default function MinimalNavbar() {
         {/* Mobile Navigation Tabs */}
         <div className="flex lg:hidden items-center justify-start gap-5 overflow-x-auto py-2.5 border-t text-xs"
           style={{ borderColor: 'rgba(0, 255, 255, 0.1)' }}>
-          {[
-            { key: 'portions', label: 'Portions', Icon: BookOpen, color: '#CCFF00' },
-            { key: 'students', label: 'Students', Icon: Users, color: '#00FFFF' },
-            { key: 'attendance', label: 'Attend.', Icon: Calendar, color: '#FF00FF' },
-            { key: 'fees', label: 'Fees', Icon: CreditCard, color: '#CCFF00' },
-            { key: 'exams', label: 'Exams', Icon: Award, color: '#00FFFF' },
-            { key: 'notes', label: 'Notes', Icon: ClipboardList, color: '#FF00FF' },
-          ].map(({ key, label, Icon, color }) => (
-            <button
-              key={key}
-              onClick={() => setActiveTab(key)}
+          {PORTAL_NAV_ITEMS.map(({ path, mobileLabel, Icon, color }) => (
+            <NavLink
+              key={path}
+              to={path}
               className="flex flex-col items-center gap-1 font-semibold shrink-0 min-w-10"
-              style={{ color: activeTab === key ? color : 'rgba(255,255,255,0.4)' }}
+              style={({ isActive }) => ({ color: isActive ? color : 'rgba(255,255,255,0.4)' })}
             >
               <Icon className="w-4 h-4" />
-              {label}
-            </button>
+              {mobileLabel}
+            </NavLink>
           ))}
         </div>
 
