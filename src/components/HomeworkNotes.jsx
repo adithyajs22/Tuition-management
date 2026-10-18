@@ -3,7 +3,7 @@ import { useTeacherPortal } from '../context/TeacherPortalContext';
 import { supabase } from '../lib/supabase';
 import {
   ClipboardList, Plus, Trash2, Edit3, X, CheckCircle2, Clock,
-  BookOpen, AlertCircle, ChevronDown, ChevronUp
+  BookOpen, AlertCircle
 } from 'lucide-react';
 
 const NOTE_TYPES = [
@@ -462,13 +462,33 @@ export default function HomeworkNotes() {
               </button>
             </div>
             <form onSubmit={handleAddSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold mb-1" style={{ color: 'rgba(0,255,255,0.7)' }}>Note Type</label>
+              <div className="rounded-2xl border p-3"
+                style={{ background: 'rgba(255,0,255,0.07)', borderColor: 'rgba(255,0,255,0.3)' }}>
+                <label className="block text-[11px] font-extrabold uppercase tracking-wider mb-2"
+                  style={{ color: '#FF7BFF' }}>
+                  Note / Task Heading *
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Chapter 3 exercises, Revise Newton's Laws..."
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="w-full rounded-xl px-3 py-3 text-sm font-bold text-white border focus:outline-none focus:ring-2"
+                  style={{ background: 'rgba(0,0,0,0.45)', borderColor: 'rgba(255,0,255,0.35)' }}
+                  required
+                  autoFocus
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="rounded-xl border p-3"
+                  style={{ background: 'rgba(0,255,255,0.06)', borderColor: 'rgba(0,255,255,0.25)' }}>
+                <label className="block text-[10px] font-extrabold uppercase tracking-wider mb-1.5" style={{ color: '#00FFFF' }}>Note Type</label>
                 <select
                   value={type}
                   onChange={(e) => setType(e.target.value)}
-                  className="w-full rounded-xl px-3 py-2 text-xs font-bold border focus:outline-none"
-                  style={{ background: 'rgba(0,0,0,0.4)', borderColor: 'rgba(0,255,255,0.2)', color: 'white' }}
+                  className="w-full rounded-lg px-2.5 py-2.5 text-xs font-extrabold border focus:outline-none"
+                  style={{ background: 'rgba(0,0,0,0.45)', borderColor: getNoteTypeConfig(type).color, color: getNoteTypeConfig(type).color }}
                 >
                   {NOTE_TYPES.map(t => (
                     <option key={t.value} value={t.value} style={{ background: '#13165a' }}>{t.label}</option>
@@ -476,18 +496,36 @@ export default function HomeworkNotes() {
                 </select>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold mb-1" style={{ color: 'rgba(0,255,255,0.7)' }}>Title / Task Name *</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Chapter 3 exercises, Revise Newton's Laws..."
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="w-full rounded-xl px-3 py-2 text-xs text-white border focus:outline-none"
-                  style={{ background: 'rgba(0,0,0,0.4)', borderColor: 'rgba(0,255,255,0.2)' }}
-                  required
-                  autoFocus
-                />
+                <div className="rounded-xl border p-3"
+                  style={{ background: 'rgba(0,255,255,0.04)', borderColor: 'rgba(0,255,255,0.2)' }}>
+                  <label className="block text-[10px] font-extrabold uppercase tracking-wider mb-1.5" style={{ color: '#00FFFF' }}>Due Date</label>
+                  <input
+                    type="date"
+                    value={dueDate}
+                    onChange={(e) => setDueDate(e.target.value)}
+                    className="w-full rounded-lg px-2 py-2.5 text-xs font-bold text-white border focus:outline-none"
+                    style={{ background: 'rgba(0,0,0,0.45)', borderColor: 'rgba(0,255,255,0.3)', colorScheme: 'dark' }}
+                  />
+                </div>
+
+                <div className="rounded-xl border p-3"
+                  style={{ background: 'rgba(204,255,0,0.05)', borderColor: 'rgba(204,255,0,0.25)' }}>
+                  <label className="block text-[10px] font-extrabold uppercase tracking-wider mb-1.5" style={{ color: '#CCFF00' }}>Priority</label>
+                  <select
+                    value={priority}
+                    onChange={(e) => setPriority(e.target.value)}
+                    className="w-full rounded-lg px-2.5 py-2.5 text-xs font-extrabold border focus:outline-none"
+                    style={{
+                      background: 'rgba(0,0,0,0.45)',
+                      borderColor: priority === 'High' ? '#FF00FF' : priority === 'Low' ? '#CCFF00' : '#00FFFF',
+                      color: priority === 'High' ? '#FF7BFF' : priority === 'Low' ? '#CCFF00' : '#00FFFF'
+                    }}
+                  >
+                    <option value="Low" style={{ background: '#13165a', color: '#CCFF00' }}>🟢 Low</option>
+                    <option value="Normal" style={{ background: '#13165a', color: '#00FFFF' }}>🔵 Normal</option>
+                    <option value="High" style={{ background: '#13165a', color: '#FF7BFF' }}>🔴 High</option>
+                  </select>
+                </div>
               </div>
 
               <div>
@@ -500,32 +538,6 @@ export default function HomeworkNotes() {
                   className="w-full rounded-xl px-3 py-2 text-xs text-white border focus:outline-none resize-none"
                   style={{ background: 'rgba(0,0,0,0.4)', borderColor: 'rgba(0,255,255,0.2)' }}
                 />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold mb-1" style={{ color: 'rgba(0,255,255,0.7)' }}>Due Date</label>
-                  <input
-                    type="date"
-                    value={dueDate}
-                    onChange={(e) => setDueDate(e.target.value)}
-                    className="w-full rounded-xl px-3 py-2 text-xs text-white border focus:outline-none"
-                    style={{ background: 'rgba(0,0,0,0.4)', borderColor: 'rgba(0,255,255,0.2)' }}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold mb-1" style={{ color: 'rgba(0,255,255,0.7)' }}>Priority</label>
-                  <select
-                    value={priority}
-                    onChange={(e) => setPriority(e.target.value)}
-                    className="w-full rounded-xl px-3 py-2 text-xs font-bold border focus:outline-none"
-                    style={{ background: 'rgba(0,0,0,0.4)', borderColor: 'rgba(0,255,255,0.2)', color: 'white' }}
-                  >
-                    <option value="Low" style={{ background: '#13165a' }}>🟢 Low</option>
-                    <option value="Normal" style={{ background: '#13165a' }}>🔵 Normal</option>
-                    <option value="High" style={{ background: '#13165a' }}>🔴 High</option>
-                  </select>
-                </div>
               </div>
 
               <div className="flex justify-end gap-3 pt-2">

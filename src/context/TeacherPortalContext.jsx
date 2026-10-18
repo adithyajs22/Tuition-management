@@ -39,6 +39,82 @@ const INITIAL_TEACHER_STUDENTS = [];
 const INITIAL_ATTENDANCE = {};
 const INITIAL_FEES = {};
 const INITIAL_WEEKLY_EXAMS = {};
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+];
+
+const getDateParts = (dateValue) => {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(dateValue || ''));
+  if (!match) return null;
+
+  const [, year, month, day] = match;
+  return { year: Number(year), month: Number(month), day: Number(day) };
+};
+
+const formatDate = (year, month, day) =>
+  `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+const getBillingCycle = (joiningDate, monthOffset) => {
+  const admission = getDateParts(joiningDate);
+  if (!admission) return null;
+
+  const cycleDate = new Date(admission.year, admission.month - 1 + monthOffset, 1);
+  const year = cycleDate.getFullYear();
+  const month = cycleDate.getMonth() + 1;
+  const day = Math.min(admission.day, new Date(year, month, 0).getDate());
+
+  return {
+    month: `${MONTH_NAMES[month - 1]} ${year}`,
+    dueDate: formatDate(year, month, day)
+  };
+};
+
+const getFeeDueDate = (fee, joiningDate) => {
+  const admission = getDateParts(joiningDate);
+  const monthMatch = /^([A-Za-z]+)\s+(\d{4})$/.exec(String(fee.month || '').trim());
+  if (!admission || !monthMatch) return fee.dueDate || '';
+
+  const monthIndex = MONTH_NAMES.findIndex(
+    month => month.toLowerCase() === monthMatch[1].toLowerCase()
+  );
+  if (monthIndex < 0) return fee.dueDate || '';
+
+  const year = Number(monthMatch[2]);
+  const month = monthIndex + 1;
+  const day = Math.min(admission.day, new Date(year, month, 0).getDate());
+  return formatDate(year, month, day);
+};
+
+const getLocalDate = () => {
+  const now = new Date();
+  return formatDate(now.getFullYear(), now.getMonth() + 1, now.getDate());
+};
+
+const serializeStudentPortions = (portionsByStudent) =>
+  Object.entries(portionsByStudent).flatMap(([studentId, portions]) => (
+    portions.length > 0
+      ? portions.map(portion => ({ ...portion, studentId }))
+      : [{ studentId, empty: true }]
+  ));
+
+const groupStudentPortions = (portions, studentIds) => {
+  const grouped = {};
+  const legacyOwnerId = studentIds[0];
+
+  (portions || []).forEach(portion => {
+    const { studentId, ...studentPortion } = portion;
+    const ownerId = studentId || legacyOwnerId;
+    if (!ownerId) return;
+    if (studentPortion.empty) {
+      grouped[ownerId] = grouped[ownerId] || [];
+      return;
+    }
+    grouped[ownerId] = [...(grouped[ownerId] || []), studentPortion];
+  });
+
+  return grouped;
+};
 
 // Master Syllabus Portions Database for Plus One students only.
 // Additional class chapters can be added manually from the UI when needed.
@@ -199,7 +275,7 @@ export function TeacherPortalProvider({ children }) {
         weekly_exams: weeklyExams,
         student_syllabus: studentSyllabus,
         student_weekly_exams: studentWeeklyExams,
-        portions: Object.values(studentPortions).flat()
+        portions: serializeStudentPortions(studentPortions)
       });
 
       if (hasRemoteData) {
@@ -209,7 +285,10 @@ export function TeacherPortalProvider({ children }) {
         setWeeklyExams(remoteData.weekly_exams || {});
         setStudentSyllabus(remoteData.student_syllabus || {});
         setStudentWeeklyExams(remoteData.student_weekly_exams || {});
-        setStudentPortions({});
+        const remotePortions = remoteData.portions || [];
+        setStudentPortions(remotePortions.length > 0
+          ? groupStudentPortions(remotePortions, (remoteData.students || []).map(student => student.id))
+          : studentPortions);
       } else if (hasLocalData) {
         const payload = buildPortalStatePayload({
           students,
@@ -218,7 +297,7 @@ export function TeacherPortalProvider({ children }) {
           weekly_exams: weeklyExams,
           student_syllabus: studentSyllabus,
           student_weekly_exams: studentWeeklyExams,
-          portions: Object.values(studentPortions).flat()
+          portions: serializeStudentPortions(studentPortions)
         });
 
         const { error: upsertError } = await supabase
@@ -292,7 +371,7 @@ export function TeacherPortalProvider({ children }) {
         weekly_exams: weeklyExams,
         student_syllabus: studentSyllabus,
         student_weekly_exams: studentWeeklyExams,
-        portions: Object.values(studentPortions).flat(),
+        portions: serializeStudentPortions(studentPortions),
         homework_notes: {}
       });
 
@@ -312,7 +391,12 @@ export function TeacherPortalProvider({ children }) {
   const currentAttendance = currentStudent
     ? [...(attendance[currentStudent.id] || [])].sort((a, b) => b.date.localeCompare(a.date))
     : [];
-  const currentFees = currentStudent ? (fees[currentStudent.id] || []) : [];
+  const currentFees = currentStudent
+    ? (fees[currentStudent.id] || []).map(fee => ({
+      ...fee,
+      dueDate: getFeeDueDate(fee, currentStudent.joiningDate)
+    }))
+    : [];
   const currentExams = currentStudent ? (weeklyExams[currentStudent.id] || []) : [];
   const portions = currentStudent ? (studentPortions[currentStudent.id] || getMasterPortionsForClass(currentStudent.studentClass || PLUS_ONE_CLASS_NAME)) : [];
 
@@ -336,7 +420,7 @@ export function TeacherPortalProvider({ children }) {
     }
 
     setStudentPortions(prev => {
-      if (!prev[currentStudent.id]) {
+      if (!Object.prototype.hasOwnProperty.call(prev, currentStudent.id)) {
         return {
           ...prev,
           [currentStudent.id]: getMasterPortionsForClass(nextClass)
@@ -388,11 +472,19 @@ export function TeacherPortalProvider({ children }) {
 
     setStudents(prev => [newStudent, ...prev]);
 
-    const monthName = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
+    const firstBillingCycle = getBillingCycle(newStudent.joiningDate, 1);
     setFees(prev => ({
       ...prev,
       [newId]: [
-        { id: 'fee-' + Date.now(), month: monthName, amountDue: newStudent.monthlyFee, status: 'Unpaid', paymentDate: '-', paymentMode: '-' }
+        {
+          id: 'fee-' + Date.now(),
+          month: firstBillingCycle?.month || new Date().toLocaleString('default', { month: 'long', year: 'numeric' }),
+          amountDue: newStudent.monthlyFee,
+          dueDate: firstBillingCycle?.dueDate || new Date().toISOString().split('T')[0],
+          status: 'Unpaid',
+          paymentDate: '-',
+          paymentMode: '-'
+        }
       ]
     }));
 
@@ -479,10 +571,20 @@ export function TeacherPortalProvider({ children }) {
   };
 
   const addMonthFeeRecord = (studentId, monthName, amount) => {
+    const student = students.find(item => item.id === studentId);
+    const dueDate = getFeeDueDate({ month: monthName }, student?.joiningDate);
     setFees(prev => ({
       ...prev,
       [studentId]: [
-        { id: 'fee-' + Date.now(), month: monthName, amountDue: Number(amount), status: 'Unpaid', paymentDate: '-', paymentMode: '-' },
+        {
+          id: 'fee-' + Date.now(),
+          month: monthName,
+          amountDue: Number(amount),
+          dueDate,
+          status: 'Unpaid',
+          paymentDate: '-',
+          paymentMode: '-'
+        },
         ...(prev[studentId] || [])
       ]
     }));
@@ -566,7 +668,22 @@ export function TeacherPortalProvider({ children }) {
 
     setStudentPortions(prev => ({
       ...prev,
-      [currentStudent.id]: (prev[currentStudent.id] || []).map(p => (p.id === portionId ? { ...p, status: newStatus } : p))
+      [currentStudent.id]: (prev[currentStudent.id] || []).map(p => (
+        p.id === portionId ? { ...p, status: newStatus, updatedAt: getLocalDate() } : p
+      ))
+    }));
+  };
+
+  const updatePortionDetails = (portionId, taughtPortion) => {
+    if (!currentStudent) return;
+
+    setStudentPortions(prev => ({
+      ...prev,
+      [currentStudent.id]: (prev[currentStudent.id] || []).map(portion => (
+        portion.id === portionId
+          ? { ...portion, taughtPortion: taughtPortion.trim(), updatedAt: getLocalDate() }
+          : portion
+      ))
     }));
   };
 
@@ -591,6 +708,15 @@ export function TeacherPortalProvider({ children }) {
     setWeeklyExams(prev => ({
       ...prev,
       [studentId]: (prev[studentId] || []).filter(e => e.id !== examId)
+    }));
+  };
+
+  const updateWeeklyExam = (studentId, examId, examData) => {
+    setWeeklyExams(prev => ({
+      ...prev,
+      [studentId]: (prev[studentId] || []).map(exam => (
+        exam.id === examId ? { ...exam, ...examData } : exam
+      ))
     }));
   };
 
@@ -727,8 +853,10 @@ export function TeacherPortalProvider({ children }) {
       deleteFeeRecord,
       addPortion,
       updatePortionStatus,
+      updatePortionDetails,
       deletePortion,
       addWeeklyExam,
+      updateWeeklyExam,
       deleteWeeklyExam,
       seedSampleStudents,
       resetToMasterSyllabus,

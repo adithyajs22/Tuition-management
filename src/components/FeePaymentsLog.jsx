@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useTeacherPortal } from '../context/TeacherPortalContext';
 import {
   CreditCard, CheckCircle, Clock, Plus, Trash2, Send,
-  AlertCircle, IndianRupee, Calendar, Undo2, X
+  AlertCircle, Calendar, Undo2, X, Download
 } from 'lucide-react';
 
 export default function FeePaymentsLog() {
@@ -41,6 +41,9 @@ export default function FeePaymentsLog() {
   const totalAmountPending = currentFees
     .filter(f => f.status === 'Unpaid')
     .reduce((sum, f) => sum + f.amountDue, 0);
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const isOverdue = (fee) => fee.status === 'Unpaid' && fee.dueDate && fee.dueDate < today;
 
   const handleAddMonthSubmit = (e) => {
     e.preventDefault();
@@ -65,6 +68,128 @@ export default function FeePaymentsLog() {
   const generateWhatsAppReminder = (fee) => {
     const text = `Hi ${currentStudent.parentName}, gentle reminder regarding tuition fee for ${currentStudent.name} (${fee.month}) of ₹${fee.amountDue}. Thank you - AJS Tuition.`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+  };
+
+  const downloadFeeReceipt = async (fee) => {
+    const { jsPDF } = await import('jspdf');
+    const receipt = new jsPDF({ format: 'a4', unit: 'mm' });
+    const pageWidth = receipt.internal.pageSize.getWidth();
+    const margin = 18;
+    const navy = [25, 25, 112];
+    const cyan = [0, 165, 180];
+    const muted = [95, 105, 125];
+    const receiptNumber = fee.receiptNo || fee.id;
+
+    receipt.setFillColor(...navy);
+    receipt.rect(0, 0, pageWidth, 57, 'F');
+    receipt.setFillColor(...cyan);
+    receipt.rect(0, 56, pageWidth, 2, 'F');
+
+    receipt.setTextColor(255, 255, 255);
+    receipt.setFont('helvetica', 'bold');
+    receipt.setFontSize(10);
+    receipt.text('AJS TUITION', margin, 18);
+    receipt.setFontSize(19);
+    receipt.text('PAYMENT RECEIPT', margin, 32);
+    receipt.setFont('helvetica', 'normal');
+    receipt.setFontSize(9);
+    receipt.setTextColor(205, 218, 238);
+    receipt.text('Official confirmation of tuition fee payment', margin, 41);
+    receipt.setFont('helvetica', 'bold');
+    receipt.setFontSize(8);
+    receipt.setTextColor(155, 230, 220);
+    receipt.text('RECEIPT NO.', pageWidth - margin, 19, { align: 'right' });
+    receipt.setTextColor(255, 255, 255);
+    receipt.setFontSize(10);
+    receipt.text(String(receiptNumber), pageWidth - margin, 26, { align: 'right' });
+    receipt.setFont('helvetica', 'normal');
+    receipt.setFontSize(8);
+    receipt.setTextColor(205, 218, 238);
+    receipt.text(`Issued ${fee.paymentDate || '-'}`, pageWidth - margin, 35, { align: 'right' });
+
+    let y = 73;
+    receipt.setTextColor(...muted);
+    receipt.setFont('helvetica', 'bold');
+    receipt.setFontSize(8);
+    receipt.text('STUDENT DETAILS', margin, y);
+    y += 7;
+    receipt.setDrawColor(220, 226, 235);
+    receipt.roundedRect(margin, y, pageWidth - margin * 2, 35, 3, 3, 'S');
+    receipt.setTextColor(...muted);
+    receipt.setFontSize(8);
+    receipt.text('STUDENT', margin + 6, y + 9);
+    receipt.text('STUDENT ID', pageWidth / 2 + 3, y + 9);
+    receipt.setFont('helvetica', 'bold');
+    receipt.setFontSize(10);
+    receipt.setTextColor(35, 45, 65);
+    receipt.text(String(currentStudent.name || '-'), margin + 6, y + 16, { maxWidth: pageWidth / 2 - margin - 12 });
+    receipt.text(String(currentStudent.id || '-'), pageWidth / 2 + 3, y + 16);
+    receipt.setFont('helvetica', 'normal');
+    receipt.setFontSize(8);
+    receipt.setTextColor(...muted);
+    receipt.text('PARENT / GUARDIAN', margin + 6, y + 25);
+    receipt.setTextColor(35, 45, 65);
+    receipt.text(String(currentStudent.parentName || '-'), margin + 6, y + 31, { maxWidth: pageWidth - margin * 2 - 12 });
+
+    y += 49;
+    receipt.setTextColor(...muted);
+    receipt.setFont('helvetica', 'bold');
+    receipt.setFontSize(8);
+    receipt.text('PAYMENT DETAILS', margin, y);
+    y += 7;
+    const detailRows = [
+      ['Billing period', fee.month || '-'],
+      ['Payment date', fee.paymentDate || '-'],
+      ['Payment method', fee.paymentMode || '-']
+    ];
+    const tableWidth = pageWidth - margin * 2;
+    receipt.setFillColor(246, 248, 252);
+    receipt.roundedRect(margin, y, tableWidth, 45, 3, 3, 'F');
+    detailRows.forEach(([label, value], index) => {
+      const rowY = y + 12 + index * 13;
+      receipt.setFont('helvetica', 'normal');
+      receipt.setFontSize(9);
+      receipt.setTextColor(...muted);
+      receipt.text(label, margin + 6, rowY);
+      receipt.setFont('helvetica', 'bold');
+      receipt.setTextColor(35, 45, 65);
+      receipt.text(String(value), pageWidth - margin - 6, rowY, { align: 'right' });
+    });
+
+    y += 56;
+    receipt.setFillColor(237, 249, 247);
+    receipt.setDrawColor(178, 224, 216);
+    receipt.roundedRect(margin, y, tableWidth, 27, 3, 3, 'FD');
+    receipt.setTextColor(30, 105, 95);
+    receipt.setFont('helvetica', 'bold');
+    receipt.setFontSize(8);
+    receipt.text('TOTAL PAID', margin + 7, y + 10);
+    receipt.setFontSize(17);
+    receipt.text(`INR ${Number(fee.amountDue).toLocaleString('en-IN')}`, pageWidth - margin - 7, y + 18, { align: 'right' });
+
+    y += 39;
+    receipt.setFillColor(229, 247, 237);
+    receipt.roundedRect(margin, y, 36, 9, 4, 4, 'F');
+    receipt.setTextColor(35, 125, 75);
+    receipt.setFontSize(8);
+    receipt.text('PAID', margin + 18, y + 6, { align: 'center' });
+    receipt.setTextColor(...muted);
+    receipt.setFont('helvetica', 'normal');
+    receipt.setFontSize(9);
+    receipt.text('Payment received and recorded. Thank you.', margin + 42, y + 6);
+
+    const footerY = 270;
+    receipt.setDrawColor(220, 226, 235);
+    receipt.line(margin, footerY, pageWidth - margin, footerY);
+    receipt.setTextColor(...muted);
+    receipt.setFontSize(8);
+    receipt.text('This is a computer-generated receipt.', pageWidth / 2, footerY + 7, { align: 'center' });
+    receipt.setFont('helvetica', 'bold');
+    receipt.text('AJS Tuition', pageWidth / 2, footerY + 13, { align: 'center' });
+
+    const safeStudentName = currentStudent.name.trim().replace(/[<>:"/\\|?*]+/g, '-');
+    const safeMonth = fee.month.trim().replace(/[<>:"/\\|?*]+/g, '-');
+    receipt.save(`${safeStudentName}-${safeMonth}-fee-receipt.pdf`);
   };
 
   return (
@@ -148,6 +273,7 @@ export default function FeePaymentsLog() {
               <tr>
                 <th className="py-3.5 px-5">Billing Month</th>
                 <th className="py-3.5 px-5">Amount Due</th>
+                <th className="py-3.5 px-5">Due Date</th>
                 <th className="py-3.5 px-5">Status</th>
                 <th className="py-3.5 px-5">Payment Date</th>
                 <th className="py-3.5 px-5">Mode</th>
@@ -167,12 +293,22 @@ export default function FeePaymentsLog() {
                     ₹{fee.amountDue.toLocaleString('en-IN')}
                   </td>
 
+                  {/* Due Date */}
+                  <td className="py-4 px-5" style={{ color: 'rgba(255,255,255,0.65)' }}>
+                    {fee.dueDate || '—'}
+                  </td>
+
                   {/* Status Badge */}
                   <td className="py-4 px-5">
                     {fee.status === 'Paid' ? (
                       <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border"
                         style={{ background: 'rgba(204,255,0,0.1)', color: '#CCFF00', borderColor: 'rgba(204,255,0,0.3)' }}>
                         <CheckCircle className="w-3.5 h-3.5" /> Paid
+                      </span>
+                    ) : isOverdue(fee) ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border"
+                        style={{ background: 'rgba(255,0,255,0.12)', color: '#FF00FF', borderColor: 'rgba(255,0,255,0.35)' }}>
+                        <AlertCircle className="w-3.5 h-3.5" /> Overdue
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border"
@@ -231,16 +367,26 @@ export default function FeePaymentsLog() {
                           </button>
                         </>
                       ) : (
-                        /* Mark Unpaid (revert) */
-                        <button
-                          onClick={() => setUnpaidConfirmFeeId(fee.id)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all"
-                          title="Mark as Unpaid"
-                          style={{ background: 'rgba(255,0,255,0.08)', color: '#FF00FF', borderColor: 'rgba(255,0,255,0.25)' }}
-                        >
-                          <Undo2 className="w-3.5 h-3.5" />
-                          Mark Unpaid
-                        </button>
+                        <>
+                          <button
+                            onClick={() => downloadFeeReceipt(fee)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all"
+                            title="Download payment receipt PDF"
+                            style={{ background: 'rgba(0,255,255,0.08)', color: '#00FFFF', borderColor: 'rgba(0,255,255,0.25)' }}
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            Download PDF
+                          </button>
+                          <button
+                            onClick={() => setUnpaidConfirmFeeId(fee.id)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all"
+                            title="Mark as Unpaid"
+                            style={{ background: 'rgba(255,0,255,0.08)', color: '#FF00FF', borderColor: 'rgba(255,0,255,0.25)' }}
+                          >
+                            <Undo2 className="w-3.5 h-3.5" />
+                            Mark Unpaid
+                          </button>
+                        </>
                       )}
 
                       {/* Delete */}
@@ -257,7 +403,7 @@ export default function FeePaymentsLog() {
                 </tr>
               )) : (
                 <tr>
-                  <td colSpan="6" className="py-16 text-center">
+                  <td colSpan="7" className="py-16 text-center">
                     <CreditCard className="w-10 h-10 mx-auto mb-3 opacity-20" style={{ color: '#00FFFF' }} />
                     <p className="font-semibold text-sm text-white mb-1">No billing records yet</p>
                     <p className="text-xs" style={{ color: 'rgba(0,255,255,0.35)' }}>

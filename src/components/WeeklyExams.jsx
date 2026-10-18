@@ -1,16 +1,38 @@
 import React, { useState } from 'react';
+import writeExcelFile from 'write-excel-file/browser';
 import { useTeacherPortal } from '../context/TeacherPortalContext';
-import { Award, Plus, Trash2, Calendar, BookOpen } from 'lucide-react';
+import { Award, Plus, Trash2, Pencil, Download } from 'lucide-react';
 
 export default function WeeklyExams() {
-  const { currentStudent, currentExams, addWeeklyExam, deleteWeeklyExam } = useTeacherPortal();
+  const { currentStudent, currentExams, addWeeklyExam, updateWeeklyExam, deleteWeeklyExam } = useTeacherPortal();
 
   const [showModal, setShowModal] = useState(false);
+  const [editingExamId, setEditingExamId] = useState(null);
   const [testDate, setTestDate] = useState(new Date().toISOString().split('T')[0]);
   const [subject, setSubject] = useState('Physics');
   const [topic, setTopic] = useState('');
   const [maxMarks, setMaxMarks] = useState(30);
   const [obtainedMarks, setObtainedMarks] = useState(25);
+
+  const openAddModal = () => {
+    setEditingExamId(null);
+    setTestDate(new Date().toISOString().split('T')[0]);
+    setSubject('Physics');
+    setTopic('');
+    setMaxMarks(30);
+    setObtainedMarks(25);
+    setShowModal(true);
+  };
+
+  const openEditModal = (exam) => {
+    setEditingExamId(exam.id);
+    setTestDate(exam.testDate);
+    setSubject(exam.subject);
+    setTopic(exam.topic);
+    setMaxMarks(exam.maxMarks);
+    setObtainedMarks(exam.marksObtained);
+    setShowModal(true);
+  };
 
   if (!currentStudent) {
     return (
@@ -24,16 +46,61 @@ export default function WeeklyExams() {
     e.preventDefault();
     if (!topic.trim()) return;
 
-    addWeeklyExam(currentStudent.id, {
+    const examData = {
       testDate,
       subject,
       topic,
       maxMarks: Number(maxMarks),
       marksObtained: Number(obtainedMarks)
-    });
+    };
+
+    if (editingExamId) {
+      updateWeeklyExam(currentStudent.id, editingExamId, examData);
+    } else {
+      addWeeklyExam(currentStudent.id, examData);
+    }
 
     setTopic('');
+    setEditingExamId(null);
     setShowModal(false);
+  };
+
+  const exportWeeklyMarks = async () => {
+    const records = [...currentExams]
+      .sort((a, b) => a.testDate.localeCompare(b.testDate))
+      .map(exam => ({
+        date: exam.testDate,
+        subject: exam.subject,
+        topic: exam.topic,
+        marksObtained: exam.marksObtained,
+        maxMarks: exam.maxMarks,
+        percentage: exam.maxMarks ? Math.round((exam.marksObtained / exam.maxMarks) * 100) : 0
+      }));
+    const safeStudentName = currentStudent.name.trim().replace(/[<>:"/\\|?*]+/g, '-');
+    const sheetData = [
+      ['Date', 'Subject', 'Topic', 'Marks Obtained', 'Maximum Marks', 'Percentage'],
+      ...records.map(exam => [
+        exam.date,
+        exam.subject,
+        exam.topic,
+        exam.marksObtained,
+        exam.maxMarks,
+        exam.percentage
+      ])
+    ];
+    try {
+      await writeExcelFile(sheetData).toFile(`${safeStudentName}-weekly-test-marks.xlsx`);
+    } catch (error) {
+      console.error('Failed to export weekly test marks workbook', error);
+      window.alert('Could not create the weekly test marks Excel file. Please try again.');
+    }
+  };
+
+  const subjectColors = {
+    physics: { color: '#67E8F9', background: 'rgba(6,182,212,0.12)', border: 'rgba(6,182,212,0.4)' },
+    chemistry: { color: '#F9A8D4', background: 'rgba(236,72,153,0.12)', border: 'rgba(236,72,153,0.4)' },
+    mathematics: { color: '#FDE047', background: 'rgba(234,179,8,0.12)', border: 'rgba(234,179,8,0.4)' },
+    biology: { color: '#86EFAC', background: 'rgba(34,197,94,0.12)', border: 'rgba(34,197,94,0.4)' }
   };
 
   return (
@@ -52,13 +119,23 @@ export default function WeeklyExams() {
             </h2>
           </div>
 
-          <button
-            onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-lg transition-all shrink-0"
-          >
-            <Plus className="w-4 h-4" />
-            Record Weekly Test Marks
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={exportWeeklyMarks}
+              disabled={currentExams.length === 0}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 font-bold text-xs border border-slate-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <Download className="w-4 h-4" />
+              Download Marks
+            </button>
+            <button
+              onClick={openAddModal}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-lg transition-all shrink-0"
+            >
+              <Plus className="w-4 h-4" />
+              Record Weekly Test Marks
+            </button>
+          </div>
         </div>
 
         {/* Exams Grid */}
@@ -73,7 +150,14 @@ export default function WeeklyExams() {
                 >
                   <div>
                     <div className="flex items-center justify-between gap-2 mb-2">
-                      <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/30">
+                      <span
+                        className="text-sm font-black uppercase px-3 py-1 rounded-lg border"
+                        style={subjectColors[(exam.subject || '').toLowerCase()] || {
+                          color: '#C4B5FD',
+                          background: 'rgba(139,92,246,0.12)',
+                          border: '1px solid rgba(139,92,246,0.4)'
+                        }}
+                      >
                         {exam.subject}
                       </span>
                       <span className="text-xs text-slate-400 font-semibold">{exam.testDate}</span>
@@ -98,13 +182,22 @@ export default function WeeklyExams() {
 
                   <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between">
                     <span className="text-xs font-bold text-slate-400">Status: Conducted</span>
-                    <button
-                      onClick={() => deleteWeeklyExam(currentStudent.id, exam.id)}
-                      className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-900/60 text-rose-400 border border-slate-700 transition-colors"
-                      title="Delete test record"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => openEditModal(exam)}
+                        className="p-1.5 rounded-lg bg-slate-800 hover:bg-purple-900/60 text-purple-300 border border-slate-700 transition-colors"
+                        title="Edit test record"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => deleteWeeklyExam(currentStudent.id, exam.id)}
+                        className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-900/60 text-rose-400 border border-slate-700 transition-colors"
+                        title="Delete test record"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
@@ -122,7 +215,9 @@ export default function WeeklyExams() {
       {showModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl">
-            <h3 className="text-lg font-bold text-white mb-4">Record Weekly Test Marks</h3>
+            <h3 className="text-lg font-bold text-white mb-4">
+              {editingExamId ? 'Edit Weekly Test Marks' : 'Record Weekly Test Marks'}
+            </h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-400 mb-1">Exam Conducted Date</label>
@@ -189,7 +284,7 @@ export default function WeeklyExams() {
                   Cancel
                 </button>
                 <button type="submit" className="px-5 py-2 rounded-xl bg-purple-600 text-white text-xs font-bold">
-                  Save Exam Score
+                  {editingExamId ? 'Save Changes' : 'Save Exam Score'}
                 </button>
               </div>
             </form>

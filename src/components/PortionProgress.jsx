@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useTeacherPortal, CLASSES_LIST, BOARDS_LIST, SUBJECTS_LIST } from '../context/TeacherPortalContext';
-import { BookOpen, Plus, Trash2, RefreshCw, Filter } from 'lucide-react';
+import { useTeacherPortal, CLASSES_LIST, BOARDS_LIST } from '../context/TeacherPortalContext';
+import { BookOpen, Plus, Trash2, RefreshCw, Filter, Save, Pencil, X } from 'lucide-react';
 
 export default function PortionProgress() {
   const { 
@@ -10,6 +10,7 @@ export default function PortionProgress() {
     updateCustomSubject,
     deleteCustomSubject,
     updatePortionStatus, 
+    updatePortionDetails,
     deletePortion, 
     selectedClass,
     setSelectedClass,
@@ -28,6 +29,8 @@ export default function PortionProgress() {
   const [newPortionTitle, setNewPortionTitle] = useState('');
   const [newSubjectName, setNewSubjectName] = useState('');
   const [editingSubjectName, setEditingSubjectName] = useState('');
+  const [taughtPortionDrafts, setTaughtPortionDrafts] = useState({});
+  const [editingTaughtPortionIds, setEditingTaughtPortionIds] = useState({});
 
   // Portions filtered strictly by selected Class, Board, AND Subject
   const currentFilteredPortions = portions.filter(p => 
@@ -252,6 +255,101 @@ export default function PortionProgress() {
                   </div>
 
                   <h3 className="font-bold text-white text-base leading-snug">{portion.portionName}</h3>
+                  {(portion.status === 'In Progress' || portion.taughtPortion) && (
+                    <div className="mt-3">
+                      {portion.status === 'In Progress' && (
+                        <>
+                          {(editingTaughtPortionIds[portion.id] || !portion.taughtPortion) ? (
+                            <>
+                              <label className="block text-[10px] font-bold text-yellow-400 uppercase mb-1">
+                                Topic / Portion Taught
+                              </label>
+                              <textarea
+                                rows="2"
+                                value={taughtPortionDrafts[portion.id] ?? portion.taughtPortion ?? ''}
+                                onChange={(e) => setTaughtPortionDrafts(prev => ({
+                                  ...prev,
+                                  [portion.id]: e.target.value
+                                }))}
+                                placeholder="Add the specific topic taught in this chapter"
+                                className="w-full bg-black border border-[#27272a] rounded-lg px-3 py-2 text-xs text-white resize-y focus:outline-none focus:border-yellow-400"
+                              />
+                            </>
+                          ) : (
+                            <p className="text-xs text-zinc-300">
+                              Topics taught: {portion.taughtPortion}
+                            </p>
+                          )}
+                        </>
+                      )}
+                      {portion.status !== 'In Progress' && portion.taughtPortion && (
+                        <p className="text-xs text-zinc-300">
+                          Topics taught: {portion.taughtPortion}
+                        </p>
+                      )}
+                      <div className="mt-2 flex items-center justify-between gap-2">
+                        <span className="text-[10px] text-zinc-400">
+                          {portion.updatedAt ? `Updated: ${portion.updatedAt}` : 'Not updated yet'}
+                        </span>
+                        {portion.status === 'In Progress' && (editingTaughtPortionIds[portion.id] || !portion.taughtPortion) && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const taughtTopic = (
+                                taughtPortionDrafts[portion.id] ?? portion.taughtPortion ?? ''
+                              ).trim();
+                              if (!taughtTopic) return;
+                              updatePortionDetails(portion.id, taughtTopic);
+                              setEditingTaughtPortionIds(prev => ({ ...prev, [portion.id]: false }));
+                              setTaughtPortionDrafts(prev => {
+                                const next = { ...prev };
+                                delete next[portion.id];
+                                return next;
+                              });
+                            }}
+                            disabled={!(taughtPortionDrafts[portion.id] ?? portion.taughtPortion ?? '').trim()}
+                            className="inline-flex items-center gap-1 rounded-lg bg-yellow-500/15 px-2.5 py-1.5 text-[10px] font-bold text-yellow-300 border border-yellow-500/30"
+                          >
+                            <Save className="w-3 h-3" />
+                            Save taught topic
+                          </button>
+                        )}
+                        {portion.status === 'In Progress' && portion.taughtPortion && !editingTaughtPortionIds[portion.id] && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setTaughtPortionDrafts(prev => ({
+                                ...prev,
+                                [portion.id]: portion.taughtPortion
+                              }));
+                              setEditingTaughtPortionIds(prev => ({ ...prev, [portion.id]: true }));
+                            }}
+                            className="inline-flex items-center gap-1 rounded-lg bg-cyan-500/10 px-2.5 py-1.5 text-[10px] font-bold text-cyan-300 border border-cyan-500/30"
+                          >
+                            <Pencil className="w-3 h-3" />
+                            Edit
+                          </button>
+                        )}
+                        {editingTaughtPortionIds[portion.id] && portion.taughtPortion && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingTaughtPortionIds(prev => ({ ...prev, [portion.id]: false }));
+                              setTaughtPortionDrafts(prev => {
+                                const next = { ...prev };
+                                delete next[portion.id];
+                                return next;
+                              });
+                            }}
+                            className="inline-flex items-center gap-1 rounded-lg bg-zinc-500/10 px-2.5 py-1.5 text-[10px] font-bold text-zinc-300 border border-zinc-500/30"
+                          >
+                            <X className="w-3 h-3" />
+                            Cancel
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Status Toggle Dropdown */}

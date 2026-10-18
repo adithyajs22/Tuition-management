@@ -1,3 +1,4 @@
+
 import { KERALA_PLUS_ONE_SYLLABUS } from '../data/keralaSyllabusData.js';
 
 export function isPlusOneStudentClass(studentClass = '') {

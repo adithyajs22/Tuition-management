@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
+import writeExcelFile from 'write-excel-file/browser';
 import { useTeacherPortal } from '../context/TeacherPortalContext';
-import { Calendar as CalendarIcon, CheckCircle2, XCircle, Sun, Plus, Trash2, Pencil } from 'lucide-react';
+import { Calendar as CalendarIcon, CheckCircle2, XCircle, Sun, Plus, Trash2, Pencil, Download } from 'lucide-react';
 
 export default function AttendanceTracker() {
   const { currentStudent, currentAttendance, addAttendanceRecord, updateAttendanceRecord, deleteAttendanceRecord } = useTeacherPortal();
@@ -8,6 +10,7 @@ export default function AttendanceTracker() {
   const [showModal, setShowModal] = useState(false);
   const [editingAttendanceId, setEditingAttendanceId] = useState(null);
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [attendanceThroughDate, setAttendanceThroughDate] = useState(new Date().toISOString().split('T')[0]);
   const [status, setStatus] = useState('Present');
   const [topic, setTopic] = useState('');
 
@@ -61,6 +64,28 @@ export default function AttendanceTracker() {
     setShowModal(false);
   };
 
+  const exportAttendance = async () => {
+    const records = currentAttendance
+      .filter(item => item.date <= attendanceThroughDate)
+      .sort((a, b) => a.date.localeCompare(b.date));
+    if (records.length === 0) return;
+
+    const lastAttendanceDate = records[records.length - 1].date;
+    const safeStudentName = currentStudent.name.trim().replace(/[<>:"/\\|?*]+/g, '-');
+    const sheetData = [
+      ['Date', 'Day', 'Status', 'Topics / Holiday Details'],
+      ...records.map(item => [item.date, item.day, item.status, item.topicsCovered])
+    ];
+    try {
+      await writeExcelFile(sheetData).toFile(`${safeStudentName}-${lastAttendanceDate}.xlsx`);
+    } catch (error) {
+      console.error('Failed to export attendance workbook', error);
+      window.alert('Could not create the attendance Excel file. Please try again.');
+    }
+  };
+
+  const attendanceExportCount = currentAttendance.filter(item => item.date <= attendanceThroughDate).length;
+
   return (
     <div className="py-8 min-h-[85vh]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
@@ -78,14 +103,36 @@ export default function AttendanceTracker() {
             </h2>
           </div>
 
-          <button
-            onClick={openAddModal}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-black text-sm shrink-0 transition-all"
-            style={{ background: 'linear-gradient(135deg, #00FFFF, #CCFF00)', color: '#191970', boxShadow: '0 0 18px rgba(0,255,255,0.3)' }}
-          >
-            <Plus className="w-4 h-4" />
-            Log Attendance
-          </button>
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
+            <label className="flex items-center gap-2 text-xs font-semibold text-cyan-200">
+              Through
+              <input
+                type="date"
+                value={attendanceThroughDate}
+                onChange={(e) => setAttendanceThroughDate(e.target.value)}
+                className="rounded-lg border px-2 py-2 text-xs text-white"
+                style={{ background: 'rgba(0,0,0,0.35)', borderColor: 'rgba(0,255,255,0.25)' }}
+              />
+            </label>
+            <button
+              onClick={exportAttendance}
+              disabled={attendanceExportCount === 0}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-black text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ background: 'rgba(0,255,255,0.12)', color: '#00FFFF', border: '1px solid rgba(0,255,255,0.3)' }}
+              title="Download attendance as an Excel workbook"
+            >
+              <Download className="w-4 h-4" />
+              Download Excel
+            </button>
+            <button
+              onClick={openAddModal}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-black text-sm transition-all"
+              style={{ background: 'linear-gradient(135deg, #00FFFF, #CCFF00)', color: '#191970', boxShadow: '0 0 18px rgba(0,255,255,0.3)' }}
+            >
+              <Plus className="w-4 h-4" />
+              Log Attendance
+            </button>
+          </div>
         </div>
 
         {/* Table */}
@@ -169,7 +216,7 @@ export default function AttendanceTracker() {
 
       {/* LOG MODAL */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+        createPortal(<div className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(10px)' }}>
           <div className="rounded-3xl p-6 max-w-md w-full shadow-2xl border"
             style={{ background: '#13165a', borderColor: 'rgba(0,255,255,0.25)', boxShadow: '0 0 50px rgba(0,255,255,0.1)' }}>
@@ -230,7 +277,7 @@ export default function AttendanceTracker() {
               </div>
             </form>
           </div>
-        </div>
+        </div>, document.body)
       )}
 
     </div>
