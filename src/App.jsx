@@ -41,7 +41,7 @@ function ProtectedPortal() {
           color: 'rgba(0,255,255,0.4)'
         }}>
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span style={{ color: 'rgba(255,0,255,0.6)' }}>AJS Teacher Management Portal • Multi-Class Tuition System</span>
+          <span style={{ color: 'rgba(255,0,255,0.6)' }}>Curriculum • Multi-Class Tuition System</span>
           <span>Passcode Protected • Auto Progress Calculation</span>
         </div>
       </footer>

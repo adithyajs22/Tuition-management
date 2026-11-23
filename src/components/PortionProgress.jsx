@@ -32,12 +32,7 @@ export default function PortionProgress() {
   const [taughtPortionDrafts, setTaughtPortionDrafts] = useState({});
   const [editingTaughtPortionIds, setEditingTaughtPortionIds] = useState({});
 
-  // Portions filtered strictly by selected Class, Board, AND Subject
-  const currentFilteredPortions = portions.filter(p => 
-    p.targetClass === selectedClass && 
-    p.board === selectedBoard && 
-    p.subject === selectedSubject
-  );
+  const currentFilteredPortions = portions;
 
   // AUTOMATIC PROGRESS CALCULATION
   const totalPortions = currentFilteredPortions.length;

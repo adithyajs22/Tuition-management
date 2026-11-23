@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import writeExcelFile from 'write-excel-file/browser';
+import { jsPDF } from 'jspdf';
+import { drawPdfFooter, drawPdfHeader, PDF_THEME } from '../lib/pdfTemplate';
 import { useTeacherPortal } from '../context/TeacherPortalContext';
 import { Award, Plus, Trash2, Pencil, Download } from 'lucide-react';
 
@@ -96,6 +98,73 @@ export default function WeeklyExams() {
     }
   };
 
+  const exportWeeklyMarksPdf = () => {
+    if (currentExams.length === 0) return;
+
+    try {
+      const report = new jsPDF({ format: 'a4', unit: 'mm' });
+      const pageWidth = report.internal.pageSize.getWidth();
+      const pageHeight = report.internal.pageSize.getHeight();
+      const margin = 16;
+      const tableWidth = pageWidth - margin * 2;
+      const records = [...currentExams].sort((a, b) => a.testDate.localeCompare(b.testDate));
+      const safeStudentName = currentStudent.name.trim().replace(/[<>:"/\\|?*]+/g, '-');
+      const columns = [margin, margin + 34, margin + 72, margin + 128];
+
+      const drawHeader = () => drawPdfHeader(
+        report,
+        'Weekly Test Marks',
+        `${currentStudent.name} (${currentStudent.studentClass || '-'})`,
+        currentStudent.name
+      );
+
+      let y = drawHeader();
+      const drawTableHeader = () => {
+        report.setFillColor(...PDF_THEME.indigo);
+        report.rect(margin, y, tableWidth, 9, 'F');
+        report.setTextColor(...PDF_THEME.white);
+        report.setFont('helvetica', 'bold');
+        report.setFontSize(8);
+        report.text('Date', columns[0] + 2, y + 6);
+        report.text('Subject', columns[1] + 2, y + 6);
+        report.text('Topic', columns[2] + 2, y + 6);
+        report.text('Marks', columns[3] + 2, y + 6);
+        report.text('%', pageWidth - margin - 2, y + 6, { align: 'right' });
+        y += 9;
+      };
+      drawTableHeader();
+
+      records.forEach(exam => {
+        const topicLines = report.splitTextToSize(String(exam.topic || '-'), 52);
+        const rowHeight = Math.max(10, topicLines.length * 4 + 5);
+        if (y + rowHeight > pageHeight - 18) {
+          report.addPage();
+          y = drawHeader();
+          drawTableHeader();
+        }
+
+        report.setDrawColor(...PDF_THEME.line);
+        report.line(margin, y + rowHeight, pageWidth - margin, y + rowHeight);
+        report.setTextColor(...PDF_THEME.ink);
+        report.setFont('helvetica', 'normal');
+        report.setFontSize(8);
+        report.text(String(exam.testDate || '-'), columns[0] + 2, y + 6);
+        report.text(String(exam.subject || '-'), columns[1] + 2, y + 6);
+        report.text(topicLines, columns[2] + 2, y + 6);
+        report.text(`${exam.marksObtained}/${exam.maxMarks}`, columns[3] + 2, y + 6);
+        const percentage = exam.maxMarks ? Math.round((exam.marksObtained / exam.maxMarks) * 100) : 0;
+        report.text(`${percentage}%`, pageWidth - margin - 2, y + 6, { align: 'right' });
+        y += rowHeight;
+      });
+
+      drawPdfFooter(report);
+      report.save(`${safeStudentName}-weekly-test-marks.pdf`);
+    } catch (error) {
+      console.error('Failed to export weekly test marks PDF', error);
+      window.alert('Could not create the weekly test marks PDF. Please try again.');
+    }
+  };
+
   const subjectColors = {
     physics: { color: '#67E8F9', background: 'rgba(6,182,212,0.12)', border: 'rgba(6,182,212,0.4)' },
     chemistry: { color: '#F9A8D4', background: 'rgba(236,72,153,0.12)', border: 'rgba(236,72,153,0.4)' },
@@ -126,7 +195,15 @@ export default function WeeklyExams() {
               className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 font-bold text-xs border border-slate-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Download className="w-4 h-4" />
-              Download Marks
+              Download Excel
+            </button>
+            <button
+              onClick={exportWeeklyMarksPdf}
+              disabled={currentExams.length === 0}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 font-bold text-xs border border-slate-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <Download className="w-4 h-4" />
+              Download PDF
             </button>
             <button
               onClick={openAddModal}

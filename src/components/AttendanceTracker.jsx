@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import writeExcelFile from 'write-excel-file/browser';
+import { jsPDF } from 'jspdf';
+import { drawPdfFooter, drawPdfHeader, PDF_THEME } from '../lib/pdfTemplate';
 import { useTeacherPortal } from '../context/TeacherPortalContext';
 import { Calendar as CalendarIcon, CheckCircle2, XCircle, Sun, Plus, Trash2, Pencil, Download } from 'lucide-react';
 
@@ -28,6 +30,18 @@ export default function AttendanceTracker() {
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     return days[new Date(year, month - 1, day).getDay()];
   };
+
+  const formatDate = (value) => {
+    if (!value) return '-';
+    const match = /^([0-9]{4})-([0-9]{2})-([0-9]{2})$/.exec(value);
+    return match ? `${match[3]}/${match[2]}/${match[1]}` : value;
+  };
+  const getAttendanceExportRecords = () => currentAttendance
+    .filter(item => (
+      (!attendanceFromDate || item.date >= attendanceFromDate)
+      && item.date <= attendanceThroughDate
+    ))
+    .sort((a, b) => a.date.localeCompare(b.date));
 
   const openAddModal = () => {
     setEditingAttendanceId(null);
@@ -65,13 +79,8 @@ export default function AttendanceTracker() {
     setShowModal(false);
   };
 
-  const exportAttendance = async () => {
-    const records = currentAttendance
-      .filter(item => (
-        (!attendanceFromDate || item.date >= attendanceFromDate)
-        && item.date <= attendanceThroughDate
-      ))
-      .sort((a, b) => a.date.localeCompare(b.date));
+  const exportAttendanceExcel = async () => {
+    const records = getAttendanceExportRecords();
     if (records.length === 0) return;
 
     const firstAttendanceDate = records[0].date;
@@ -79,7 +88,7 @@ export default function AttendanceTracker() {
     const safeStudentName = currentStudent.name.trim().replace(/[<>:"/\\|?*]+/g, '-');
     const sheetData = [
       ['Date', 'Day', 'Status', 'Topics / Holiday Details'],
-      ...records.map(item => [item.date, item.day, item.status, item.topicsCovered])
+      ...records.map(item => [formatDate(item.date), item.day, item.status, item.topicsCovered])
     ];
     try {
       await writeExcelFile(sheetData).toFile(`${safeStudentName}-${firstAttendanceDate}-to-${lastAttendanceDate}.xlsx`);
@@ -89,10 +98,75 @@ export default function AttendanceTracker() {
     }
   };
 
-  const attendanceExportCount = currentAttendance.filter(item => (
-    (!attendanceFromDate || item.date >= attendanceFromDate)
-    && item.date <= attendanceThroughDate
-  )).length;
+  const exportAttendancePdf = () => {
+    const records = getAttendanceExportRecords();
+    if (records.length === 0) return;
+
+    try {
+      const report = new jsPDF({ format: 'a4', unit: 'mm' });
+      const pageWidth = report.internal.pageSize.getWidth();
+      const pageHeight = report.internal.pageSize.getHeight();
+      const margin = 16;
+      const safeStudentName = currentStudent.name.trim().replace(/[<>:"/\\|?*]+/g, '-');
+      const firstAttendanceDate = records[0].date;
+      const lastAttendanceDate = records[records.length - 1].date;
+      const columns = [margin, margin + 29, margin + 60, margin + 91];
+
+      const drawHeader = () => {
+        return drawPdfHeader(
+          report,
+          'Attendance Report',
+          `${currentStudent.name} (${currentStudent.studentClass || '-'})  |  ${formatDate(firstAttendanceDate)} to ${formatDate(lastAttendanceDate)}`,
+          currentStudent.name
+        );
+      };
+
+      let y = drawHeader();
+      const tableWidth = pageWidth - margin * 2;
+      const drawTableHeader = () => {
+        report.setFillColor(...PDF_THEME.indigo);
+        report.rect(margin, y, tableWidth, 9, 'F');
+        report.setTextColor(...PDF_THEME.white);
+        report.setFont('helvetica', 'bold');
+        report.setFontSize(8);
+        report.text('Date', columns[0] + 2, y + 6);
+        report.text('Day', columns[1] + 2, y + 6);
+        report.text('Status', columns[2] + 2, y + 6);
+        report.text('Topics / Holiday Details', columns[3] + 2, y + 6);
+        y += 9;
+      };
+      drawTableHeader();
+
+      records.forEach(item => {
+        const topicLines = report.splitTextToSize(String(item.topicsCovered || '-'), pageWidth - margin - columns[3] - 4);
+        const rowHeight = Math.max(10, topicLines.length * 4 + 5);
+        if (y + rowHeight > pageHeight - 18) {
+          report.addPage();
+          y = drawHeader();
+          drawTableHeader();
+        }
+
+        report.setDrawColor(...PDF_THEME.line);
+        report.line(margin, y + rowHeight, pageWidth - margin, y + rowHeight);
+        report.setTextColor(...PDF_THEME.ink);
+        report.setFont('helvetica', 'normal');
+        report.setFontSize(8);
+        report.text(formatDate(item.date), columns[0] + 2, y + 6);
+        report.text(String(item.day || '-'), columns[1] + 2, y + 6);
+        report.text(String(item.status || '-'), columns[2] + 2, y + 6);
+        report.text(topicLines, columns[3] + 2, y + 6);
+        y += rowHeight;
+      });
+
+      drawPdfFooter(report);
+      report.save(`${safeStudentName}-${firstAttendanceDate}-to-${lastAttendanceDate}.pdf`);
+    } catch (error) {
+      console.error('Failed to export attendance PDF', error);
+      window.alert('Could not create the attendance PDF. Please try again.');
+    }
+  };
+
+  const attendanceExportCount = getAttendanceExportRecords().length;
 
   return (
     <div className="py-8 min-h-[85vh]">
@@ -116,6 +190,7 @@ export default function AttendanceTracker() {
               From
               <input
                 type="date"
+                lang="en-GB"
                 value={attendanceFromDate}
                 max={attendanceThroughDate}
                 onChange={(e) => setAttendanceFromDate(e.target.value)}
@@ -127,6 +202,7 @@ export default function AttendanceTracker() {
               To
               <input
                 type="date"
+                lang="en-GB"
                 value={attendanceThroughDate}
                 min={attendanceFromDate || undefined}
                 onChange={(e) => setAttendanceThroughDate(e.target.value)}
@@ -135,7 +211,7 @@ export default function AttendanceTracker() {
               />
             </label>
             <button
-              onClick={exportAttendance}
+              onClick={exportAttendanceExcel}
               disabled={attendanceExportCount === 0}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-black text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               style={{ background: 'rgba(0,255,255,0.12)', color: '#00FFFF', border: '1px solid rgba(0,255,255,0.3)' }}
@@ -143,6 +219,16 @@ export default function AttendanceTracker() {
             >
               <Download className="w-4 h-4" />
               Download Excel
+            </button>
+            <button
+              onClick={exportAttendancePdf}
+              disabled={attendanceExportCount === 0}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-black text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ background: 'rgba(204,255,0,0.1)', color: '#CCFF00', border: '1px solid rgba(204,255,0,0.3)' }}
+              title="Download attendance as a PDF report"
+            >
+              <Download className="w-4 h-4" />
+              Download PDF
             </button>
             <button
               onClick={openAddModal}
@@ -173,7 +259,7 @@ export default function AttendanceTracker() {
                   <tr key={item.id} className="border-b transition-colors"
                     style={{ borderColor: 'rgba(0,255,255,0.06)' }}>
                     <td className="py-3.5 px-4 font-bold text-white">
-                      {item.date} <span className="text-[11px] font-medium" style={{ color: 'rgba(0,255,255,0.5)' }}>({item.day})</span>
+                      {formatDate(item.date)} <span className="text-[11px] font-medium" style={{ color: 'rgba(0,255,255,0.5)' }}>({item.day})</span>
                     </td>
 
                     <td className="py-3.5 px-4">
@@ -249,6 +335,7 @@ export default function AttendanceTracker() {
                 <label className="block text-xs font-semibold mb-1" style={{ color: 'rgba(0,255,255,0.7)' }}>Date</label>
                 <input
                   type="date"
+                  lang="en-GB"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
                   className="w-full rounded-xl px-3 py-2 text-xs text-white border focus:outline-none"

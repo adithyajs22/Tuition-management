@@ -44,7 +44,7 @@ export default function MinimalNavbar() {
               <div className="flex items-center gap-2">
                 <span className="font-extrabold text-lg tracking-tight truncate"
                   style={{ color: '#00FFFF' }}>
-                  AJS Teacher Portal
+                  Curriculum
                 </span>
                 <span className="hidden sm:inline-flex text-[10px] font-mono uppercase px-2 py-0.5 rounded font-extrabold border"
                   style={{ 

@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import { jsPDF } from 'jspdf';
+import writeExcelFile from 'write-excel-file/browser';
+import { drawPdfFooter, drawPdfHeader, drawPdfSectionTitle, PDF_THEME } from '../lib/pdfTemplate';
 import { useTeacherPortal } from '../context/TeacherPortalContext';
 import {
   CreditCard, CheckCircle, Clock, Plus, Trash2, Send,
@@ -66,238 +69,218 @@ export default function FeePaymentsLog() {
   };
 
   const generateWhatsAppReminder = (fee) => {
-    const text = `Hi ${currentStudent.parentName}, gentle reminder regarding tuition fee for ${currentStudent.name} (${fee.month}) of ₹${fee.amountDue}. Thank you - AJS Tuition.`;
+    const text = `Hi ${currentStudent.parentName}, gentle reminder regarding tuition fee for ${currentStudent.name} (${fee.month}) of ₹${fee.amountDue}. Thank you - Curriculum.`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   };
 
-  const downloadFeeReceipt = async (fee) => {
-    const { jsPDF } = await import('jspdf');
+  const downloadFeeReceipt = (fee) => {
     const receipt = new jsPDF({ format: 'a4', unit: 'mm' });
     const pageWidth = receipt.internal.pageSize.getWidth();
     const margin = 18;
-    const navy = [25, 25, 112];
-    const cyan = [0, 165, 180];
-    const muted = [95, 105, 125];
     const receiptNumber = fee.receiptNo || fee.id;
+    let y = drawPdfHeader(
+      receipt,
+      'Payment Receipt',
+      `Receipt No. ${receiptNumber}  |  Issued ${fee.paymentDate || '-'}`,
+      currentStudent.name
+    );
 
-    receipt.setFillColor(...navy);
-    receipt.rect(0, 0, pageWidth, 57, 'F');
-    receipt.setFillColor(...cyan);
-    receipt.rect(0, 56, pageWidth, 2, 'F');
-
-    receipt.setTextColor(255, 255, 255);
+    y = drawPdfSectionTitle(receipt, 'Student Information', y);
+    receipt.setFillColor(...PDF_THEME.pale);
+    receipt.setDrawColor(...PDF_THEME.line);
+    receipt.roundedRect(margin, y - 3, pageWidth - margin * 2, 39, 2, 2, 'FD');
+    receipt.setFont('helvetica', 'normal');
+    receipt.setFontSize(8);
+    receipt.setTextColor(...PDF_THEME.muted);
+    receipt.text('STUDENT NAME', margin + 6, y + 6);
+    receipt.text('STUDENT ID', pageWidth / 2 + 3, y + 6);
     receipt.setFont('helvetica', 'bold');
     receipt.setFontSize(10);
-    receipt.text('AJS TUITION', margin, 18);
-    receipt.setFontSize(19);
-    receipt.text('PAYMENT RECEIPT', margin, 32);
+    receipt.setTextColor(...PDF_THEME.ink);
+    receipt.text(String(currentStudent.name || '-'), margin + 6, y + 14, { maxWidth: pageWidth / 2 - margin - 12 });
+    receipt.text(String(currentStudent.id || '-'), pageWidth / 2 + 3, y + 14);
     receipt.setFont('helvetica', 'normal');
+    receipt.setFontSize(8);
+    receipt.setTextColor(...PDF_THEME.muted);
+    receipt.text('CLASS', margin + 6, y + 25);
+    receipt.text('PARENT / GUARDIAN', pageWidth / 2 + 3, y + 25);
+    receipt.setFont('helvetica', 'bold');
     receipt.setFontSize(9);
-    receipt.setTextColor(205, 218, 238);
-    receipt.text('Official confirmation of tuition fee payment', margin, 41);
-    receipt.setFont('helvetica', 'bold');
-    receipt.setFontSize(8);
-    receipt.setTextColor(155, 230, 220);
-    receipt.text('RECEIPT NO.', pageWidth - margin, 19, { align: 'right' });
-    receipt.setTextColor(255, 255, 255);
-    receipt.setFontSize(10);
-    receipt.text(String(receiptNumber), pageWidth - margin, 26, { align: 'right' });
-    receipt.setFont('helvetica', 'normal');
-    receipt.setFontSize(8);
-    receipt.setTextColor(205, 218, 238);
-    receipt.text(`Issued ${fee.paymentDate || '-'}`, pageWidth - margin, 35, { align: 'right' });
+    receipt.setTextColor(...PDF_THEME.ink);
+    receipt.text(String(currentStudent.studentClass || '-'), margin + 6, y + 32);
+    receipt.text(String(currentStudent.parentName || '-'), pageWidth / 2 + 3, y + 32, { maxWidth: pageWidth / 2 - margin - 12 });
 
-    let y = 73;
-    receipt.setTextColor(...muted);
-    receipt.setFont('helvetica', 'bold');
-    receipt.setFontSize(8);
-    receipt.text('STUDENT DETAILS', margin, y);
-    y += 7;
-    receipt.setDrawColor(220, 226, 235);
-    receipt.roundedRect(margin, y, pageWidth - margin * 2, 35, 3, 3, 'S');
-    receipt.setTextColor(...muted);
-    receipt.setFontSize(8);
-    receipt.text('STUDENT', margin + 6, y + 9);
-    receipt.text('STUDENT ID', pageWidth / 2 + 3, y + 9);
-    receipt.setFont('helvetica', 'bold');
-    receipt.setFontSize(10);
-    receipt.setTextColor(35, 45, 65);
-    receipt.text(String(currentStudent.name || '-'), margin + 6, y + 16, { maxWidth: pageWidth / 2 - margin - 12 });
-    receipt.text(String(currentStudent.id || '-'), pageWidth / 2 + 3, y + 16);
-    receipt.setFont('helvetica', 'normal');
-    receipt.setFontSize(8);
-    receipt.setTextColor(...muted);
-    receipt.text('PARENT / GUARDIAN', margin + 6, y + 25);
-    receipt.setTextColor(35, 45, 65);
-    receipt.text(String(currentStudent.parentName || '-'), margin + 6, y + 31, { maxWidth: pageWidth - margin * 2 - 12 });
-
-    y += 49;
-    receipt.setTextColor(...muted);
-    receipt.setFont('helvetica', 'bold');
-    receipt.setFontSize(8);
-    receipt.text('PAYMENT DETAILS', margin, y);
-    y += 7;
-    const detailRows = [
+    y = drawPdfSectionTitle(receipt, 'Payment Information', y + 49);
+    const paymentFields = [
       ['Billing period', fee.month || '-'],
       ['Payment date', fee.paymentDate || '-'],
       ['Payment method', fee.paymentMode || '-']
     ];
-    const tableWidth = pageWidth - margin * 2;
-    receipt.setFillColor(246, 248, 252);
-    receipt.roundedRect(margin, y, tableWidth, 45, 3, 3, 'F');
-    detailRows.forEach(([label, value], index) => {
-      const rowY = y + 12 + index * 13;
+    receipt.setFillColor(...PDF_THEME.pale);
+    receipt.roundedRect(margin, y - 3, pageWidth - margin * 2, 46, 2, 2, 'F');
+    paymentFields.forEach(([label, value], index) => {
+      const rowY = y + 7 + index * 13;
       receipt.setFont('helvetica', 'normal');
       receipt.setFontSize(9);
-      receipt.setTextColor(...muted);
+      receipt.setTextColor(...PDF_THEME.muted);
       receipt.text(label, margin + 6, rowY);
       receipt.setFont('helvetica', 'bold');
-      receipt.setTextColor(35, 45, 65);
+      receipt.setTextColor(...PDF_THEME.ink);
       receipt.text(String(value), pageWidth - margin - 6, rowY, { align: 'right' });
     });
 
-    y += 56;
-    receipt.setFillColor(237, 249, 247);
-    receipt.setDrawColor(178, 224, 216);
-    receipt.roundedRect(margin, y, tableWidth, 27, 3, 3, 'FD');
-    receipt.setTextColor(30, 105, 95);
+    y += 57;
+    receipt.setFillColor(232, 241, 252);
+    receipt.setDrawColor(...PDF_THEME.indigo);
+    receipt.roundedRect(margin, y, pageWidth - margin * 2, 26, 2, 2, 'FD');
+    receipt.setTextColor(...PDF_THEME.ink);
     receipt.setFont('helvetica', 'bold');
-    receipt.setFontSize(8);
-    receipt.text('TOTAL PAID', margin + 7, y + 10);
+    receipt.setFontSize(9);
+    receipt.text('TOTAL PAID', margin + 7, y + 11);
+    receipt.setTextColor(...PDF_THEME.indigo);
     receipt.setFontSize(17);
-    receipt.text(`INR ${Number(fee.amountDue).toLocaleString('en-IN')}`, pageWidth - margin - 7, y + 18, { align: 'right' });
+    receipt.text(`INR ${Number(fee.amountDue).toLocaleString('en-IN')}`, pageWidth - margin - 7, y + 17, { align: 'right' });
 
-    y += 39;
-    receipt.setFillColor(229, 247, 237);
-    receipt.roundedRect(margin, y, 36, 9, 4, 4, 'F');
-    receipt.setTextColor(35, 125, 75);
-    receipt.setFontSize(8);
-    receipt.text('PAID', margin + 18, y + 6, { align: 'center' });
-    receipt.setTextColor(...muted);
+    y += 37;
+    receipt.setTextColor(...PDF_THEME.teal);
+    receipt.setFont('helvetica', 'bold');
+    receipt.setFontSize(9);
+    receipt.text('PAYMENT RECEIVED', margin, y);
     receipt.setFont('helvetica', 'normal');
     receipt.setFontSize(9);
-    receipt.text('Payment received and recorded. Thank you.', margin + 42, y + 6);
+    receipt.setTextColor(...PDF_THEME.muted);
+    receipt.text('Thank you. This receipt confirms the payment recorded in the Curriculum portal.', margin, y + 7, {
+      maxWidth: pageWidth - margin * 2
+    });
 
-    const footerY = 270;
-    receipt.setDrawColor(220, 226, 235);
-    receipt.line(margin, footerY, pageWidth - margin, footerY);
-    receipt.setTextColor(...muted);
-    receipt.setFontSize(8);
-    receipt.text('This is a computer-generated receipt.', pageWidth / 2, footerY + 7, { align: 'center' });
-    receipt.setFont('helvetica', 'bold');
-    receipt.text('AJS Tuition', pageWidth / 2, footerY + 13, { align: 'center' });
-
+    drawPdfFooter(receipt);
     const safeStudentName = currentStudent.name.trim().replace(/[<>:"/\\|?*]+/g, '-');
     const safeMonth = fee.month.trim().replace(/[<>:"/\\|?*]+/g, '-');
     receipt.save(`${safeStudentName}-${safeMonth}-fee-receipt.pdf`);
   };
 
-  const downloadMonthlyFeeReport = async () => {
+  const downloadMonthlyFeeReport = () => {
     if (currentFees.length === 0) return;
 
-    const { jsPDF } = await import('jspdf');
     const report = new jsPDF({ format: 'a4', unit: 'mm' });
     const pageWidth = report.internal.pageSize.getWidth();
     const pageHeight = report.internal.pageSize.getHeight();
     const margin = 16;
-    const navy = [25, 25, 112];
-    const cyan = [0, 165, 180];
-    const muted = [95, 105, 125];
-
-    report.setFillColor(...navy);
-    report.rect(0, 0, pageWidth, 52, 'F');
-    report.setFillColor(...cyan);
-    report.rect(0, 51, pageWidth, 2, 'F');
-
-    report.setTextColor(255, 255, 255);
-    report.setFont('helvetica', 'bold');
-    report.setFontSize(10);
-    report.text('AJS TUITION', margin, 16);
-    report.setFontSize(18);
-    report.text('MONTHLY FEE REPORT', margin, 29);
-    report.setFont('helvetica', 'normal');
-    report.setFontSize(9);
-    report.setTextColor(205, 218, 238);
-    report.text(String(currentStudent.name || '-'), margin, 38);
-    report.text(`Student ID: ${currentStudent.id || '-'}`, pageWidth - margin, 38, { align: 'right' });
-
-    let y = 64;
-    report.setTextColor(...muted);
-    report.setFont('helvetica', 'bold');
-    report.setFontSize(8);
-    report.text('STUDENT SUMMARY', margin, y);
-
-    y += 7;
-    report.setFillColor(246, 248, 252);
-    report.roundedRect(margin, y, pageWidth - margin * 2, 22, 3, 3, 'F');
-    report.setFontSize(8);
-    report.text(`Class: ${currentStudent.studentClass || '-'}`, margin + 6, y + 8);
-    report.text(`Monthly rate: INR ${Number(currentStudent.monthlyFee || 0).toLocaleString('en-IN')}`, pageWidth / 2, y + 8);
-    report.text(`Paid months: ${paidMonthsCount}`, margin + 6, y + 16);
-    report.text(`Collected: INR ${totalAmountCollected.toLocaleString('en-IN')}`, pageWidth / 2, y + 16);
-
-    y += 32;
-    report.setFont('helvetica', 'bold');
-    report.setTextColor(...muted);
-    report.text('MONTHLY PAYMENT DETAILS', margin, y);
-    y += 6;
-
     const tableLeft = margin;
     const tableWidth = pageWidth - margin * 2;
     const columns = [tableLeft, tableLeft + 48, tableLeft + 78, tableLeft + 106, tableLeft + 130, tableLeft + tableWidth];
+    const drawTableHeader = (y) => {
+      report.setFillColor(...PDF_THEME.indigo);
+      report.rect(tableLeft, y, tableWidth, 10, 'F');
+      report.setTextColor(...PDF_THEME.white);
+      report.setFont('helvetica', 'bold');
+      report.setFontSize(7.5);
+      report.text('Billing Month', columns[0] + 3, y + 6.5);
+      report.text('Amount', columns[1] + 3, y + 6.5);
+      report.text('Due Date', columns[2] + 3, y + 6.5);
+      report.text('Status', columns[3] + 3, y + 6.5);
+      report.text('Paid Date', columns[4] + 3, y + 6.5);
+      report.text('Mode', columns[5] - 3, y + 6.5, { align: 'right' });
+      return y + 10;
+    };
 
-    report.setFillColor(231, 238, 246);
-    report.rect(tableLeft, y, tableWidth, 10, 'F');
-    report.setTextColor(35, 45, 65);
-    report.setFontSize(7.5);
-    report.text('Billing Month', columns[0] + 3, y + 6.5);
-    report.text('Amount', columns[1] + 3, y + 6.5);
-    report.text('Due Date', columns[2] + 3, y + 6.5);
-    report.text('Status', columns[3] + 3, y + 6.5);
-    report.text('Paid Date', columns[4] + 3, y + 6.5);
-    report.text('Mode', columns[5] - 3, y + 6.5, { align: 'right' });
-    y += 10;
+    let y = drawPdfHeader(
+      report,
+      'Monthly Fee Report',
+      `${currentStudent.name || '-'}  |  Student ID: ${currentStudent.id || '-'}`,
+      currentStudent.name
+    );
+    y = drawPdfSectionTitle(report, 'Student Information', y);
+    report.setFillColor(...PDF_THEME.pale);
+    report.roundedRect(margin, y - 3, tableWidth, 23, 2, 2, 'F');
+    report.setFont('helvetica', 'normal');
+    report.setFontSize(8);
+    report.setTextColor(...PDF_THEME.ink);
+    report.text(`Class: ${currentStudent.studentClass || '-'}`, margin + 6, y + 6);
+    report.text(`Monthly rate: INR ${Number(currentStudent.monthlyFee || 0).toLocaleString('en-IN')}`, pageWidth / 2, y + 6);
+    report.text(`Paid months: ${paidMonthsCount} / ${totalMonthsCount}`, margin + 6, y + 15);
+    report.text(`Collected: INR ${totalAmountCollected.toLocaleString('en-IN')}`, pageWidth / 2, y + 15);
+
+    y = drawPdfSectionTitle(report, 'Monthly Payment Details', y + 32);
+    y = drawTableHeader(y);
 
     const sortedFees = [...currentFees].sort((a, b) => String(a.month || '').localeCompare(String(b.month || '')));
     for (const fee of sortedFees) {
-      if (y > pageHeight - 25) {
+      if (y > pageHeight - 30) {
         report.addPage();
-        y = 20;
+        y = drawPdfHeader(
+          report,
+          'Monthly Fee Report',
+          `${currentStudent.name || '-'}  |  Continued`,
+          currentStudent.name
+        );
+        y = drawPdfSectionTitle(report, 'Monthly Payment Details', y);
+        y = drawTableHeader(y);
       }
 
-      report.setDrawColor(220, 226, 235);
+      report.setDrawColor(...PDF_THEME.line);
       report.line(tableLeft, y, tableLeft + tableWidth, y);
-      report.setTextColor(35, 45, 65);
+      report.setTextColor(...PDF_THEME.ink);
       report.setFont('helvetica', 'normal');
       report.setFontSize(8);
       report.text(String(fee.month || '-'), columns[0] + 3, y + 7, { maxWidth: 43 });
       report.text(`INR ${Number(fee.amountDue || 0).toLocaleString('en-IN')}`, columns[1] + 3, y + 7);
       report.text(String(fee.dueDate || '-'), columns[2] + 3, y + 7);
-      report.setTextColor(fee.status === 'Paid' ? 35 : 180, fee.status === 'Paid' ? 125 : 55, fee.status === 'Paid' ? 75 : 95);
+      report.setTextColor(...(fee.status === 'Paid' ? PDF_THEME.teal : [180, 55, 95]));
       report.text(String(fee.status || '-'), columns[3] + 3, y + 7);
-      report.setTextColor(35, 45, 65);
+      report.setTextColor(...PDF_THEME.ink);
       report.text(fee.status === 'Paid' ? String(fee.paymentDate || '-') : '-', columns[4] + 3, y + 7);
       report.text(fee.status === 'Paid' ? String(fee.paymentMode || '-') : '-', columns[5] - 3, y + 7, { align: 'right', maxWidth: 38 });
       y += 12;
     }
 
-    report.setDrawColor(220, 226, 235);
+    if (y > pageHeight - 30) {
+      report.addPage();
+      y = drawPdfHeader(
+        report,
+        'Monthly Fee Report',
+        `${currentStudent.name || '-'}  |  Continued`,
+        currentStudent.name
+      );
+    }
+    report.setDrawColor(...PDF_THEME.line);
     report.line(margin, y + 5, pageWidth - margin, y + 5);
-    report.setTextColor(...muted);
+    report.setTextColor(...PDF_THEME.ink);
     report.setFontSize(8);
     report.text('Pending amount', margin, y + 14);
     report.setFont('helvetica', 'bold');
     report.setTextColor(180, 55, 95);
     report.text(`INR ${totalAmountPending.toLocaleString('en-IN')}`, pageWidth - margin, y + 14, { align: 'right' });
-
-    const footerY = pageHeight - 12;
-    report.setTextColor(...muted);
-    report.setFont('helvetica', 'normal');
-    report.setFontSize(8);
-    report.text('This is a computer-generated monthly fee report.', pageWidth / 2, footerY, { align: 'center' });
+    drawPdfFooter(report);
 
     const safeStudentName = currentStudent.name.trim().replace(/[<>:"/\\|?*]+/g, '-');
     report.save(`${safeStudentName}-monthly-fee-report.pdf`);
+  };
+
+  const downloadMonthlyFeeExcel = async () => {
+    if (currentFees.length === 0) return;
+
+    const sheetData = [
+      ['Billing Month', 'Amount Due', 'Due Date', 'Status', 'Payment Date', 'Payment Mode'],
+      ...[...currentFees]
+        .sort((a, b) => String(a.month || '').localeCompare(String(b.month || '')))
+        .map(fee => [
+          fee.month || '',
+          Number(fee.amountDue) || 0,
+          fee.dueDate || '',
+          fee.status || '',
+          fee.status === 'Paid' ? fee.paymentDate || '' : '',
+          fee.status === 'Paid' ? fee.paymentMode || '' : ''
+        ])
+    ];
+    const safeStudentName = currentStudent.name.trim().replace(/[<>:"/\\|?*]+/g, '-');
+
+    try {
+      await writeExcelFile(sheetData).toFile(`${safeStudentName}-monthly-fee-report.xlsx`);
+    } catch (error) {
+      console.error('Failed to export monthly fee workbook', error);
+      window.alert('Could not create the monthly fee Excel file. Please try again.');
+    }
   };
 
   return (
@@ -373,6 +356,16 @@ export default function FeePaymentsLog() {
             >
               <Download className="w-4 h-4" />
               Download Fee PDF
+            </button>
+            <button
+              onClick={downloadMonthlyFeeExcel}
+              disabled={currentFees.length === 0}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ background: 'rgba(204,255,0,0.08)', color: '#CCFF00', border: '1px solid rgba(204,255,0,0.25)' }}
+              title="Download this student's complete monthly fee ledger as an Excel workbook"
+            >
+              <Download className="w-4 h-4" />
+              Download Fee Excel
             </button>
             <button
               onClick={() => setShowAddMonthModal(true)}

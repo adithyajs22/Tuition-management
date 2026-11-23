@@ -32,7 +32,7 @@ export default function Navbar() {
                   {tuitionInfo.centerName}
                 </span>
                 <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30">
-                  Teacher Portal
+                  Curriculum
                 </span>
               </div>
               <p className="text-xs text-slate-400 font-medium">Teacher & Student Management System</p>

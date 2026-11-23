@@ -42,7 +42,9 @@ export default function StudentManager() {
   const [joiningDate, setJoiningDate] = useState(new Date().toISOString().split('T')[0]); // Date of Admission
 
   // Edit Form state
+  const [editId, setEditId] = useState('');
   const [editName, setEditName] = useState('');
+  const [editIdError, setEditIdError] = useState('');
   const [editClass, setEditClass] = useState('Plus One (Class 11)');
   const [editBoard, setEditBoard] = useState('State Syllabus (Kerala)');
   const [editBatch, setEditBatch] = useState('');
@@ -110,6 +112,8 @@ export default function StudentManager() {
 
   const openEditModal = (s) => {
     setEditingStudent(s);
+    setEditId(s.id || '');
+    setEditIdError('');
     setEditName(s.name || '');
     setEditClass(s.studentClass || 'Plus One (Class 11)');
     setEditBoard(s.board || 'State Syllabus (Kerala)');
@@ -124,7 +128,19 @@ export default function StudentManager() {
     e.preventDefault();
     if (!editingStudent) return;
 
+    const nextId = editId.trim();
+    if (!nextId) {
+      setEditIdError('Student ID is required.');
+      return;
+    }
+
+    if (students.some(student => student.id === nextId && student.id !== editingStudent.id)) {
+      setEditIdError('This student ID is already in use.');
+      return;
+    }
+
     updateStudent(editingStudent.id, {
+      id: nextId,
       name: editName,
       studentClass: editClass,
       board: editBoard,
@@ -547,6 +563,20 @@ export default function StudentManager() {
             </div>
             <form onSubmit={handleEditSubmit} className="space-y-3">
               <div>
+                        <label className="block text-xs font-semibold text-zinc-400 mb-1">Student ID</label>
+                        <input
+                          type="text"
+                          value={editId}
+                          onChange={(e) => {
+                            setEditId(e.target.value);
+                            setEditIdError('');
+                          }}
+                          className="w-full bg-[#000000] border border-[#27272a] rounded-xl px-3 py-2 text-xs text-white"
+                          required
+                        />
+                        {editIdError && <p className="text-xs text-rose-400 mt-1">{editIdError}</p>}
+                      </div>
+                      <div>
                 <label className="block text-xs font-semibold text-zinc-400 mb-1">Student Full Name</label>
                 <input
                   type="text"

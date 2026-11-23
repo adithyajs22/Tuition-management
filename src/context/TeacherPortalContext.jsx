@@ -116,6 +116,12 @@ const groupStudentPortions = (portions, studentIds) => {
   return grouped;
 };
 
+const renameStudentMapKey = (records, oldId, newId) => {
+  if (!Object.prototype.hasOwnProperty.call(records, oldId)) return records;
+  const { [oldId]: studentRecords, ...otherRecords } = records;
+  return { ...otherRecords, [newId]: studentRecords };
+};
+
 // Master Syllabus Portions Database for Plus One students only.
 // Additional class chapters can be added manually from the UI when needed.
 const INITIAL_MASTER_PORTIONS = [
@@ -161,6 +167,7 @@ const INITIAL_MASTER_PORTIONS = [
 
   { id: 'p11-st-b1', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Biology', portionName: 'The Living World & Biological Classification', status: 'Completed' }
 ];
+const MASTER_PORTION_IDS = new Set(INITIAL_MASTER_PORTIONS.map(portion => portion.id));
 
 const ENV_PASSCODE = import.meta.env.VITE_PASSCODE || 'tuition1';
 
@@ -418,6 +425,12 @@ export function TeacherPortalProvider({ children }) {
   const currentExams = currentStudent ? (weeklyExams[currentStudent.id] || []) : [];
   const portions = currentStudent
     ? (studentPortions[currentStudent.id] || getMasterPortionsForClass(selectedClass))
+      .filter(portion => (
+        !portion.deleted
+        && portion.targetClass === selectedClass
+        && portion.board === selectedBoard
+        && portion.subject === selectedSubject
+      ))
     : [];
 
   const availableSubjects = React.useMemo(() => {
@@ -526,7 +539,24 @@ export function TeacherPortalProvider({ children }) {
   };
 
   const updateStudent = (id, updated) => {
-    setStudents(prev => prev.map(s => (s.id === id ? { ...s, ...updated } : s)));
+    const nextId = String(updated.id || id).trim();
+    if (!nextId || students.some(student => student.id === nextId && student.id !== id)) {
+      return false;
+    }
+
+    setStudents(prev => prev.map(s => (s.id === id ? { ...s, ...updated, id: nextId } : s)));
+
+    if (nextId !== id) {
+      setAttendance(prev => renameStudentMapKey(prev, id, nextId));
+      setFees(prev => renameStudentMapKey(prev, id, nextId));
+      setWeeklyExams(prev => renameStudentMapKey(prev, id, nextId));
+      setStudentSyllabus(prev => renameStudentMapKey(prev, id, nextId));
+      setStudentWeeklyExams(prev => renameStudentMapKey(prev, id, nextId));
+      setStudentPortions(prev => renameStudentMapKey(prev, id, nextId));
+      setActiveStudentId(prev => prev === id ? nextId : prev);
+    }
+
+    return true;
   };
 
   const deleteStudent = (id) => {
@@ -724,7 +754,13 @@ export function TeacherPortalProvider({ children }) {
 
     setStudentPortions(prev => ({
       ...prev,
-      [currentStudent.id]: (prev[currentStudent.id] || []).filter(p => p.id !== portionId)
+      [currentStudent.id]: (prev[currentStudent.id] || []).flatMap(portion => {
+        if (portion.id !== portionId) return [portion];
+        if (MASTER_PORTION_IDS.has(portion.id)) {
+          return [{ ...portion, deleted: true, updatedAt: getLocalDate() }];
+        }
+        return [];
+      })
     }));
   };
 

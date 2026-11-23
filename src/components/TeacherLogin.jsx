@@ -34,7 +34,7 @@ export default function TeacherLogin() {
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 via-teal-600 to-orange-600 mx-auto flex items-center justify-center shadow-lg shadow-cyan-500/20 mb-4">
             <GraduationCap className="w-9 h-9 text-slate-950 font-bold" />
           </div>
-          <h1 className="text-2xl font-black text-white tracking-tight">Teacher Portal Access</h1>
+          <h1 className="text-2xl font-black text-white tracking-tight">Curriculum Access</h1>
           <p className="text-xs text-orange-400 mt-1 font-semibold flex items-center justify-center gap-1">
             <Sparkles className="w-3.5 h-3.5 text-orange-400" />
             Admin access only. Please enter the passcode to proceed.
