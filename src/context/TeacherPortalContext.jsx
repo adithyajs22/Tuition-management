@@ -165,9 +165,8 @@ const INITIAL_MASTER_PORTIONS = [
 const ENV_PASSCODE = import.meta.env.VITE_PASSCODE || 'tuition1';
 
 export function TeacherPortalProvider({ children }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return localStorage.getItem('apex_teacher_auth') === 'true';
-  });
+  // Authentication is session-only: every full page reload starts at the login screen.
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // Interactive Syllabus Dropdown Filters
   const [selectedClass, setSelectedClass] = useState(PLUS_ONE_CLASS_NAME);
@@ -338,10 +337,7 @@ export function TeacherPortalProvider({ children }) {
     loadSharedPortalState();
   }, []);
 
-  // Sync state to localStorage
-  useEffect(() => {
-    localStorage.setItem('ajs_teacher_auth', isAuthenticated ? 'true' : 'false');
-  }, [isAuthenticated]);
+  // Authentication state intentionally is not persisted to localStorage.
 
   useEffect(() => {
     if (activeStudentId) {
@@ -481,7 +477,6 @@ export function TeacherPortalProvider({ children }) {
   const loginTeacher = (passcode) => {
     if (passcode === ENV_PASSCODE) {
       setIsAuthenticated(true);
-      localStorage.setItem('apex_teacher_auth', 'true');
       return true;
     }
     return false;
@@ -489,7 +484,6 @@ export function TeacherPortalProvider({ children }) {
 
   const logoutTeacher = () => {
     setIsAuthenticated(false);
-    localStorage.removeItem('apex_teacher_auth');
   };
 
   // Student CRUD
