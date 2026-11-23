@@ -90,7 +90,7 @@ export default function PortionProgress() {
             </div>
 
             <h2 className="text-2xl font-black text-white tracking-tight">
-              Plus One (Class 11) • Syllabus & Auto Progress
+              {selectedClass} • Syllabus & Auto Progress
             </h2>
             <p className="text-xs text-yellow-400/90 mt-1 font-medium">
               Peacock Green & Yellow Theme • Auto-calculates portion completion!

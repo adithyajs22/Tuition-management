@@ -10,6 +10,7 @@ export default function AttendanceTracker() {
   const [showModal, setShowModal] = useState(false);
   const [editingAttendanceId, setEditingAttendanceId] = useState(null);
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [attendanceFromDate, setAttendanceFromDate] = useState('');
   const [attendanceThroughDate, setAttendanceThroughDate] = useState(new Date().toISOString().split('T')[0]);
   const [status, setStatus] = useState('Present');
   const [topic, setTopic] = useState('');
@@ -66,10 +67,14 @@ export default function AttendanceTracker() {
 
   const exportAttendance = async () => {
     const records = currentAttendance
-      .filter(item => item.date <= attendanceThroughDate)
+      .filter(item => (
+        (!attendanceFromDate || item.date >= attendanceFromDate)
+        && item.date <= attendanceThroughDate
+      ))
       .sort((a, b) => a.date.localeCompare(b.date));
     if (records.length === 0) return;
 
+    const firstAttendanceDate = records[0].date;
     const lastAttendanceDate = records[records.length - 1].date;
     const safeStudentName = currentStudent.name.trim().replace(/[<>:"/\\|?*]+/g, '-');
     const sheetData = [
@@ -77,14 +82,17 @@ export default function AttendanceTracker() {
       ...records.map(item => [item.date, item.day, item.status, item.topicsCovered])
     ];
     try {
-      await writeExcelFile(sheetData).toFile(`${safeStudentName}-${lastAttendanceDate}.xlsx`);
+      await writeExcelFile(sheetData).toFile(`${safeStudentName}-${firstAttendanceDate}-to-${lastAttendanceDate}.xlsx`);
     } catch (error) {
       console.error('Failed to export attendance workbook', error);
       window.alert('Could not create the attendance Excel file. Please try again.');
     }
   };
 
-  const attendanceExportCount = currentAttendance.filter(item => item.date <= attendanceThroughDate).length;
+  const attendanceExportCount = currentAttendance.filter(item => (
+    (!attendanceFromDate || item.date >= attendanceFromDate)
+    && item.date <= attendanceThroughDate
+  )).length;
 
   return (
     <div className="py-8 min-h-[85vh]">
@@ -105,10 +113,22 @@ export default function AttendanceTracker() {
 
           <div className="flex flex-wrap items-center gap-3 shrink-0">
             <label className="flex items-center gap-2 text-xs font-semibold text-cyan-200">
-              Through
+              From
+              <input
+                type="date"
+                value={attendanceFromDate}
+                max={attendanceThroughDate}
+                onChange={(e) => setAttendanceFromDate(e.target.value)}
+                className="rounded-lg border px-2 py-2 text-xs text-white"
+                style={{ background: 'rgba(0,0,0,0.35)', borderColor: 'rgba(0,255,255,0.25)' }}
+              />
+            </label>
+            <label className="flex items-center gap-2 text-xs font-semibold text-cyan-200">
+              To
               <input
                 type="date"
                 value={attendanceThroughDate}
+                min={attendanceFromDate || undefined}
                 onChange={(e) => setAttendanceThroughDate(e.target.value)}
                 className="rounded-lg border px-2 py-2 text-xs text-white"
                 style={{ background: 'rgba(0,0,0,0.35)', borderColor: 'rgba(0,255,255,0.25)' }}

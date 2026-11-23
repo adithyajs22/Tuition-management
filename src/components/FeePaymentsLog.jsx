@@ -192,6 +192,114 @@ export default function FeePaymentsLog() {
     receipt.save(`${safeStudentName}-${safeMonth}-fee-receipt.pdf`);
   };
 
+  const downloadMonthlyFeeReport = async () => {
+    if (currentFees.length === 0) return;
+
+    const { jsPDF } = await import('jspdf');
+    const report = new jsPDF({ format: 'a4', unit: 'mm' });
+    const pageWidth = report.internal.pageSize.getWidth();
+    const pageHeight = report.internal.pageSize.getHeight();
+    const margin = 16;
+    const navy = [25, 25, 112];
+    const cyan = [0, 165, 180];
+    const muted = [95, 105, 125];
+
+    report.setFillColor(...navy);
+    report.rect(0, 0, pageWidth, 52, 'F');
+    report.setFillColor(...cyan);
+    report.rect(0, 51, pageWidth, 2, 'F');
+
+    report.setTextColor(255, 255, 255);
+    report.setFont('helvetica', 'bold');
+    report.setFontSize(10);
+    report.text('AJS TUITION', margin, 16);
+    report.setFontSize(18);
+    report.text('MONTHLY FEE REPORT', margin, 29);
+    report.setFont('helvetica', 'normal');
+    report.setFontSize(9);
+    report.setTextColor(205, 218, 238);
+    report.text(String(currentStudent.name || '-'), margin, 38);
+    report.text(`Student ID: ${currentStudent.id || '-'}`, pageWidth - margin, 38, { align: 'right' });
+
+    let y = 64;
+    report.setTextColor(...muted);
+    report.setFont('helvetica', 'bold');
+    report.setFontSize(8);
+    report.text('STUDENT SUMMARY', margin, y);
+
+    y += 7;
+    report.setFillColor(246, 248, 252);
+    report.roundedRect(margin, y, pageWidth - margin * 2, 22, 3, 3, 'F');
+    report.setFontSize(8);
+    report.text(`Class: ${currentStudent.studentClass || '-'}`, margin + 6, y + 8);
+    report.text(`Monthly rate: INR ${Number(currentStudent.monthlyFee || 0).toLocaleString('en-IN')}`, pageWidth / 2, y + 8);
+    report.text(`Paid months: ${paidMonthsCount}`, margin + 6, y + 16);
+    report.text(`Collected: INR ${totalAmountCollected.toLocaleString('en-IN')}`, pageWidth / 2, y + 16);
+
+    y += 32;
+    report.setFont('helvetica', 'bold');
+    report.setTextColor(...muted);
+    report.text('MONTHLY PAYMENT DETAILS', margin, y);
+    y += 6;
+
+    const tableLeft = margin;
+    const tableWidth = pageWidth - margin * 2;
+    const columns = [tableLeft, tableLeft + 48, tableLeft + 78, tableLeft + 106, tableLeft + 130, tableLeft + tableWidth];
+
+    report.setFillColor(231, 238, 246);
+    report.rect(tableLeft, y, tableWidth, 10, 'F');
+    report.setTextColor(35, 45, 65);
+    report.setFontSize(7.5);
+    report.text('Billing Month', columns[0] + 3, y + 6.5);
+    report.text('Amount', columns[1] + 3, y + 6.5);
+    report.text('Due Date', columns[2] + 3, y + 6.5);
+    report.text('Status', columns[3] + 3, y + 6.5);
+    report.text('Paid Date', columns[4] + 3, y + 6.5);
+    report.text('Mode', columns[5] - 3, y + 6.5, { align: 'right' });
+    y += 10;
+
+    const sortedFees = [...currentFees].sort((a, b) => String(a.month || '').localeCompare(String(b.month || '')));
+    for (const fee of sortedFees) {
+      if (y > pageHeight - 25) {
+        report.addPage();
+        y = 20;
+      }
+
+      report.setDrawColor(220, 226, 235);
+      report.line(tableLeft, y, tableLeft + tableWidth, y);
+      report.setTextColor(35, 45, 65);
+      report.setFont('helvetica', 'normal');
+      report.setFontSize(8);
+      report.text(String(fee.month || '-'), columns[0] + 3, y + 7, { maxWidth: 43 });
+      report.text(`INR ${Number(fee.amountDue || 0).toLocaleString('en-IN')}`, columns[1] + 3, y + 7);
+      report.text(String(fee.dueDate || '-'), columns[2] + 3, y + 7);
+      report.setTextColor(fee.status === 'Paid' ? 35 : 180, fee.status === 'Paid' ? 125 : 55, fee.status === 'Paid' ? 75 : 95);
+      report.text(String(fee.status || '-'), columns[3] + 3, y + 7);
+      report.setTextColor(35, 45, 65);
+      report.text(fee.status === 'Paid' ? String(fee.paymentDate || '-') : '-', columns[4] + 3, y + 7);
+      report.text(fee.status === 'Paid' ? String(fee.paymentMode || '-') : '-', columns[5] - 3, y + 7, { align: 'right', maxWidth: 38 });
+      y += 12;
+    }
+
+    report.setDrawColor(220, 226, 235);
+    report.line(margin, y + 5, pageWidth - margin, y + 5);
+    report.setTextColor(...muted);
+    report.setFontSize(8);
+    report.text('Pending amount', margin, y + 14);
+    report.setFont('helvetica', 'bold');
+    report.setTextColor(180, 55, 95);
+    report.text(`INR ${totalAmountPending.toLocaleString('en-IN')}`, pageWidth - margin, y + 14, { align: 'right' });
+
+    const footerY = pageHeight - 12;
+    report.setTextColor(...muted);
+    report.setFont('helvetica', 'normal');
+    report.setFontSize(8);
+    report.text('This is a computer-generated monthly fee report.', pageWidth / 2, footerY, { align: 'center' });
+
+    const safeStudentName = currentStudent.name.trim().replace(/[<>:"/\\|?*]+/g, '-');
+    report.save(`${safeStudentName}-monthly-fee-report.pdf`);
+  };
+
   return (
     <div className="py-8 min-h-[85vh]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
@@ -255,14 +363,26 @@ export default function FeePaymentsLog() {
               ({totalMonthsCount} entries)
             </span>
           </h3>
-          <button
-            onClick={() => setShowAddMonthModal(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs transition-all"
-            style={{ background: 'linear-gradient(135deg, #CCFF00, #00FFFF)', color: '#191970', boxShadow: '0 0 14px rgba(204,255,0,0.3)' }}
-          >
-            <Plus className="w-4 h-4" />
-            Add Billing Month
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={downloadMonthlyFeeReport}
+              disabled={currentFees.length === 0}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ background: 'rgba(0,255,255,0.08)', color: '#00FFFF', border: '1px solid rgba(0,255,255,0.25)' }}
+              title="Download this student's complete monthly fee ledger as PDF"
+            >
+              <Download className="w-4 h-4" />
+              Download Fee PDF
+            </button>
+            <button
+              onClick={() => setShowAddMonthModal(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs transition-all"
+              style={{ background: 'linear-gradient(135deg, #CCFF00, #00FFFF)', color: '#191970', boxShadow: '0 0 14px rgba(204,255,0,0.3)' }}
+            >
+              <Plus className="w-4 h-4" />
+              Add Billing Month
+            </button>
+          </div>
         </div>
 
         {/* Payments Table */}

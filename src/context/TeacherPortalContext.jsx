@@ -122,17 +122,42 @@ const INITIAL_MASTER_PORTIONS = [
   { id: 'p11-st-p1', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Physics', portionName: 'Units and Measurements', status: 'Completed' },
   { id: 'p11-st-p2', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Physics', portionName: 'Motion in a Straight Line', status: 'Completed' },
   { id: 'p11-st-p3', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Physics', portionName: 'Motion in a Plane', status: 'Completed' },
-  { id: 'p11-st-p4', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Physics', portionName: 'Laws of Motion & Friction', status: 'In Progress' },
+  { id: 'p11-st-p4', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Physics', portionName: 'Laws of Motion', status: 'In Progress' },
   { id: 'p11-st-p5', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Physics', portionName: 'Work, Energy and Power', status: 'In Progress' },
-  { id: 'p11-st-p6', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Physics', portionName: 'System of Particles & Rotational Motion', status: 'Not Started' },
+  { id: 'p11-st-p6', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Physics', portionName: 'System of Particles and Rotational Motion', status: 'Not Started' },
   { id: 'p11-st-p7', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Physics', portionName: 'Gravitation', status: 'Not Started' },
+  { id: 'p11-st-p8', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Physics', portionName: 'Mechanical Properties of Solids', status: 'Not Started' },
+  { id: 'p11-st-p9', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Physics', portionName: 'Mechanical Properties of Fluids', status: 'Not Started' },
+  { id: 'p11-st-p10', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Physics', portionName: 'Thermal Properties of Matter', status: 'Not Started' },
+  { id: 'p11-st-p11', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Physics', portionName: 'Thermodynamics', status: 'Not Started' },
+  { id: 'p11-st-p12', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Physics', portionName: 'Kinetic Theory', status: 'Not Started' },
+  { id: 'p11-st-p13', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Physics', portionName: 'Oscillations', status: 'Not Started' },
+  { id: 'p11-st-p14', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Physics', portionName: 'Waves', status: 'Not Started' },
 
   { id: 'p11-st-c1', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Chemistry', portionName: 'Some Basic Concepts of Chemistry', status: 'Completed' },
   { id: 'p11-st-c2', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Chemistry', portionName: 'Structure of Atom', status: 'Completed' },
-  { id: 'p11-st-c3', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Chemistry', portionName: 'Classification of Elements & Periodic Properties', status: 'Completed' },
+  { id: 'p11-st-c3', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Chemistry', portionName: 'Classification of Elements and Periodicity in Properties', status: 'Completed' },
+  { id: 'p11-st-c4', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Chemistry', portionName: 'Chemical Bonding and Molecular Structure', status: 'Not Started' },
+  { id: 'p11-st-c5', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Chemistry', portionName: 'Thermodynamics', status: 'Not Started' },
+  { id: 'p11-st-c6', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Chemistry', portionName: 'Equilibrium', status: 'Not Started' },
+  { id: 'p11-st-c7', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Chemistry', portionName: 'Redox Reactions', status: 'Not Started' },
+  { id: 'p11-st-c8', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Chemistry', portionName: 'Organic Chemistry – Some Basic Principles and Techniques', status: 'Not Started' },
+  { id: 'p11-st-c9', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Chemistry', portionName: 'Hydrocarbons', status: 'Not Started' },
 
-  { id: 'p11-st-m1', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Mathematics', portionName: 'Sets, Relations and Functions', status: 'Completed' },
-  { id: 'p11-st-m2', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Mathematics', portionName: 'Trigonometric Functions', status: 'In Progress' },
+  { id: 'p11-st-m1', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Mathematics', portionName: 'Sets', status: 'Completed' },
+  { id: 'p11-st-m2', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Mathematics', portionName: 'Relations and Functions', status: 'Completed' },
+  { id: 'p11-st-m3', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Mathematics', portionName: 'Trigonometric Functions', status: 'In Progress' },
+  { id: 'p11-st-m4', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Mathematics', portionName: 'Complex Numbers and Quadratic Equations', status: 'Not Started' },
+  { id: 'p11-st-m5', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Mathematics', portionName: 'Linear Inequalities', status: 'Not Started' },
+  { id: 'p11-st-m6', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Mathematics', portionName: 'Permutations and Combinations', status: 'Not Started' },
+  { id: 'p11-st-m7', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Mathematics', portionName: 'Binomial Theorem', status: 'Not Started' },
+  { id: 'p11-st-m8', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Mathematics', portionName: 'Sequences and Series', status: 'Not Started' },
+  { id: 'p11-st-m9', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Mathematics', portionName: 'Straight Lines', status: 'Not Started' },
+  { id: 'p11-st-m10', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Mathematics', portionName: 'Conic Sections', status: 'Not Started' },
+  { id: 'p11-st-m11', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Mathematics', portionName: 'Introduction to Three Dimensional Geometry', status: 'Not Started' },
+  { id: 'p11-st-m12', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Mathematics', portionName: 'Limits and Derivatives', status: 'Not Started' },
+  { id: 'p11-st-m13', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Mathematics', portionName: 'Statistics', status: 'Not Started' },
+  { id: 'p11-st-m14', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Mathematics', portionName: 'Probability', status: 'Not Started' },
 
   { id: 'p11-st-b1', targetClass: 'Plus One (Class 11)', board: 'State Syllabus (Kerala)', subject: 'Biology', portionName: 'The Living World & Biological Classification', status: 'Completed' }
 ];
@@ -369,8 +394,7 @@ export function TeacherPortalProvider({ children }) {
         weekly_exams: weeklyExams,
         student_syllabus: studentSyllabus,
         student_weekly_exams: studentWeeklyExams,
-        portions: serializeStudentPortions(studentPortions),
-        homework_notes: {}
+        portions: serializeStudentPortions(studentPortions)
       });
 
       const { error } = await supabase
@@ -396,7 +420,9 @@ export function TeacherPortalProvider({ children }) {
     }))
     : [];
   const currentExams = currentStudent ? (weeklyExams[currentStudent.id] || []) : [];
-  const portions = currentStudent ? (studentPortions[currentStudent.id] || getMasterPortionsForClass(currentStudent.studentClass || PLUS_ONE_CLASS_NAME)) : [];
+  const portions = currentStudent
+    ? (studentPortions[currentStudent.id] || getMasterPortionsForClass(selectedClass))
+    : [];
 
   const availableSubjects = React.useMemo(() => {
     const classSubjects = customSubjects[selectedClass] || [];
@@ -406,27 +432,41 @@ export function TeacherPortalProvider({ children }) {
 
   useEffect(() => {
     if (!currentStudent) return;
+
     const nextClass = currentStudent.studentClass || PLUS_ONE_CLASS_NAME;
     const nextBoard = currentStudent.board || 'State Syllabus (Kerala)';
 
-    if (selectedClass !== nextClass) {
-      setSelectedClass(nextClass);
-    }
+    setSelectedClass(nextClass);
+    setSelectedBoard(nextBoard);
+  }, [currentStudent?.id, currentStudent?.studentClass, currentStudent?.board]);
 
-    if (selectedBoard !== nextBoard) {
-      setSelectedBoard(nextBoard);
-    }
+  useEffect(() => {
+    if (!currentStudent) return;
 
     setStudentPortions(prev => {
-      if (!Object.prototype.hasOwnProperty.call(prev, currentStudent.id)) {
-        return {
-          ...prev,
-          [currentStudent.id]: getMasterPortionsForClass(nextClass)
-        };
+      const existing = prev[currentStudent.id] || [];
+      const master = getMasterPortionsForClass(selectedClass);
+
+      if (master.length === 0) {
+        if (!Object.prototype.hasOwnProperty.call(prev, currentStudent.id)) {
+          return { ...prev, [currentStudent.id]: [] };
+        }
+        return prev;
       }
-      return prev;
+
+      const knownKeys = new Set(existing.map(portion => `${portion.targetClass}|${portion.board}|${portion.subject}|${portion.portionName}`));
+      const missingMasterPortions = master.filter(portion => (
+        !knownKeys.has(`${portion.targetClass}|${portion.board}|${portion.subject}|${portion.portionName}`)
+      ));
+
+      if (missingMasterPortions.length === 0) return prev;
+
+      return {
+        ...prev,
+        [currentStudent.id]: [...existing, ...missingMasterPortions]
+      };
     });
-  }, [currentStudent, selectedClass, selectedBoard]);
+  }, [currentStudent?.id, selectedClass]);
 
   useEffect(() => {
     if (!availableSubjects.includes(selectedSubject)) {
