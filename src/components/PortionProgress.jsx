@@ -32,7 +32,13 @@ export default function PortionProgress() {
   const [taughtPortionDrafts, setTaughtPortionDrafts] = useState({});
   const [editingTaughtPortionIds, setEditingTaughtPortionIds] = useState({});
 
-  const currentFilteredPortions = portions;
+  const normalizeFilterValue = (value) => String(value || '').trim().toLocaleLowerCase();
+  const currentFilteredPortions = portions.filter(portion => (
+    normalizeFilterValue(portion.targetClass) === normalizeFilterValue(selectedClass)
+    && normalizeFilterValue(portion.board) === normalizeFilterValue(selectedBoard)
+    && normalizeFilterValue(portion.subject) === normalizeFilterValue(selectedSubject)
+    && !portion.deleted
+  ));
 
   // AUTOMATIC PROGRESS CALCULATION
   const totalPortions = currentFilteredPortions.length;
@@ -241,7 +247,7 @@ export default function PortionProgress() {
                     </div>
 
                     <button
-                      onClick={() => deletePortion(portion.id)}
+                      onClick={() => deletePortion(portion)}
                       className="p-1 rounded bg-[#000000] hover:bg-rose-900/60 text-rose-400 transition-colors border border-[#27272a]"
                       title="Delete Portion"
                     >
@@ -294,7 +300,7 @@ export default function PortionProgress() {
                                 taughtPortionDrafts[portion.id] ?? portion.taughtPortion ?? ''
                               ).trim();
                               if (!taughtTopic) return;
-                              updatePortionDetails(portion.id, taughtTopic);
+                              updatePortionDetails(portion, taughtTopic);
                               setEditingTaughtPortionIds(prev => ({ ...prev, [portion.id]: false }));
                               setTaughtPortionDrafts(prev => {
                                 const next = { ...prev };
@@ -353,7 +359,7 @@ export default function PortionProgress() {
 
                   <select
                     value={portion.status}
-                    onChange={(e) => updatePortionStatus(portion.id, e.target.value)}
+                    onChange={(e) => updatePortionStatus(portion, e.target.value)}
                     className={`px-3 py-1.5 rounded-xl text-xs font-extrabold focus:outline-none transition-colors cursor-pointer border ${
                       portion.status === 'Completed' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/40' :
                       portion.status === 'In Progress' ? 'bg-yellow-500/15 text-yellow-400 border-yellow-500/40' :

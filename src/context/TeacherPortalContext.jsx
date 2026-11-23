@@ -169,6 +169,14 @@ const INITIAL_MASTER_PORTIONS = [
 ];
 const MASTER_PORTION_IDS = new Set(INITIAL_MASTER_PORTIONS.map(portion => portion.id));
 
+const isSamePortion = (portion, target) => (
+  portion.id === target.id
+  && portion.targetClass === target.targetClass
+  && portion.board === target.board
+  && portion.subject === target.subject
+  && portion.portionName === target.portionName
+);
+
 const ENV_PASSCODE = import.meta.env.VITE_PASSCODE || 'tuition1';
 
 export function TeacherPortalProvider({ children }) {
@@ -711,7 +719,7 @@ export function TeacherPortalProvider({ children }) {
     if (!currentStudent) return;
 
     const newPortion = {
-      id: 'por-' + Date.now(),
+      id: `por-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       targetClass,
       board,
       subject: subjectName,
@@ -725,37 +733,39 @@ export function TeacherPortalProvider({ children }) {
     }));
   };
 
-  const updatePortionStatus = (portionId, newStatus) => {
+  const updatePortionStatus = (targetPortion, newStatus) => {
     if (!currentStudent) return;
 
     setStudentPortions(prev => ({
       ...prev,
       [currentStudent.id]: (prev[currentStudent.id] || []).map(p => (
-        p.id === portionId ? { ...p, status: newStatus, updatedAt: getLocalDate() } : p
+        isSamePortion(p, targetPortion)
+          ? { ...p, status: newStatus, updatedAt: getLocalDate() }
+          : p
       ))
     }));
   };
 
-  const updatePortionDetails = (portionId, taughtPortion) => {
+  const updatePortionDetails = (targetPortion, taughtPortion) => {
     if (!currentStudent) return;
 
     setStudentPortions(prev => ({
       ...prev,
       [currentStudent.id]: (prev[currentStudent.id] || []).map(portion => (
-        portion.id === portionId
+        isSamePortion(portion, targetPortion)
           ? { ...portion, taughtPortion: taughtPortion.trim(), updatedAt: getLocalDate() }
           : portion
       ))
     }));
   };
 
-  const deletePortion = (portionId) => {
+  const deletePortion = (targetPortion) => {
     if (!currentStudent) return;
 
     setStudentPortions(prev => ({
       ...prev,
       [currentStudent.id]: (prev[currentStudent.id] || []).flatMap(portion => {
-        if (portion.id !== portionId) return [portion];
+        if (!isSamePortion(portion, targetPortion)) return [portion];
         if (MASTER_PORTION_IDS.has(portion.id)) {
           return [{ ...portion, deleted: true, updatedAt: getLocalDate() }];
         }
